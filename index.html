@@ -1372,19 +1372,75 @@
                     <!-- DATA SELECTOR -->
                     <div class="schedule-date">
                         <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Select date:</label>
-                        <input type="date" class="form-input" id="schedule-date">
+                        <select class="form-input" id="schedule-date" style="padding: 0.75rem;">
+                            <option value="">-- Select date --</option>
+                            <option value="24 Dec">24 December</option>
+                            <option value="25 Dec">25 December</option>
+                        </select>
                     </div>
                     
                     <!-- TIME SELECTOR -->
                     <div class="schedule-grid">
                         <div>
                             <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Start time:</label>
-                            <input type="time" class="time-input" id="start-time">
+                            <select class="time-input" id="start-time" style="padding: 0.75rem;">
+                                <option value="">-- Select time --</option>
+                                <option value="00:00">00:00</option>
+                                <option value="01:00">01:00</option>
+                                <option value="02:00">02:00</option>
+                                <option value="03:00">03:00</option>
+                                <option value="04:00">04:00</option>
+                                <option value="05:00">05:00</option>
+                                <option value="06:00">06:00</option>
+                                <option value="07:00">07:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="21:00">21:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:00">23:00</option>
+                            </select>
                         </div>
                         <div class="time-separator">-</div>
                         <div>
                             <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">End time:</label>
-                            <input type="time" class="time-input" id="end-time">
+                            <select class="time-input" id="end-time" style="padding: 0.75rem;">
+                                <option value="">-- Select time --</option>
+                                <option value="00:00">00:00</option>
+                                <option value="01:00">01:00</option>
+                                <option value="02:00">02:00</option>
+                                <option value="03:00">03:00</option>
+                                <option value="04:00">04:00</option>
+                                <option value="05:00">05:00</option>
+                                <option value="06:00">06:00</option>
+                                <option value="07:00">07:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="09:00">09:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="11:00">11:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="13:00">13:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="15:00">15:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="17:00">17:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="19:00">19:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="21:00">21:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:00">23:00</option>
+                            </select>
                         </div>
                     </div>
                     
@@ -1556,9 +1612,32 @@
                 input.addEventListener('change', updateScheduleDisplay);
             });
             
-            // Setează data minimă ca ziua de azi
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.min = today;
+            // Validare automată pentru ore
+            startTimeInput.addEventListener('change', validateTimes);
+            endTimeInput.addEventListener('change', validateTimes);
+        }
+        
+        function validateTimes() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            if (startTime && endTime) {
+                // Convertim orele în minute pentru comparație
+                const startMinutes = timeToMinutes(startTime);
+                const endMinutes = timeToMinutes(endTime);
+                
+                if (endMinutes <= startMinutes) {
+                    showError('End time must be after start time!');
+                    document.getElementById('end-time').value = '';
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        function timeToMinutes(time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
         }
         
         function updateScheduleDisplay() {
@@ -1572,16 +1651,11 @@
             let scheduleString = '';
             
             if (date) {
-                // Formatăm data în mod frumos (ex: "25 Dec")
-                const dateObj = new Date(date + 'T00:00:00');
-                const formattedDate = dateObj.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short'
-                });
-                scheduleString += formattedDate;
+                // Folosim direct valoarea din dropdown (ex: "24 Dec")
+                scheduleString += date;
                 
                 if (startTime && endTime) {
-                    // Formatăm orele (eliminăm secundele dacă există)
+                    // Folosim orele direct din dropdown
                     const formattedStart = startTime.substring(0, 5);
                     const formattedEnd = endTime.substring(0, 5);
                     scheduleString += `, ${formattedStart}-${formattedEnd}`;
@@ -1614,12 +1688,7 @@
             let scheduleString = '';
             
             if (date) {
-                const dateObj = new Date(date + 'T00:00:00');
-                const formattedDate = dateObj.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short'
-                });
-                scheduleString += formattedDate;
+                scheduleString += date;
             }
             
             if (startTime && endTime) {
@@ -2093,9 +2162,8 @@
             const endTime = document.getElementById('end-time').value;
             
             if (startTime && endTime) {
-                if (startTime >= endTime) {
-                    showError('End time must be after start time!');
-                    return;
+                if (!validateTimes()) {
+                    return; // Dacă validarea eșuează, nu continua
                 }
             }
             
