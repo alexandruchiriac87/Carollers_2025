@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ro">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome Carolers - Global Map</title>
+    <title>Colindători Bine Veniți - Cartier Tineri Buftea</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     
@@ -82,7 +83,7 @@
             transform: scale(1.05);
         }
 
-        /* Info/Help Button */
+        /* Buton Info/Help */
         #info-btn {
             background: rgba(255,255,255,0.2);
             padding: 0.4rem 0.8rem;
@@ -123,7 +124,7 @@
             height: 100%;
         }
         
-        /* RIGHT BUTTON GROUP - PC & MOBILE */
+        /* GRUP BUTOANE DREAPTA - PC & MOBIL */
         #right-controls {
             position: fixed;
             bottom: 20px;
@@ -134,7 +135,7 @@
             gap: 12px;
         }
         
-        /* ADD HOUSE BUTTON - RIGHT */
+        /* BUTON ADAUGA CASA - DREAPTA */
         #add-btn-right {
             width: 60px;
             height: 60px;
@@ -157,7 +158,7 @@
             box-shadow: 0 8px 25px rgba(0,0,0,0.5);
         }
 
-        /* SHARE BUTTON - RIGHT */
+        /* BUTON SHARE - DREAPTA */
         #share-btn-right {
             width: 60px;
             height: 60px;
@@ -179,7 +180,7 @@
             background: #128C7E;
         }
         
-        /* LEFT BUTTON GROUP */
+        /* GRUP BUTOANE STANGA */
         #left-controls {
             position: fixed;
             bottom: 20px;
@@ -190,7 +191,7 @@
             gap: 12px;
         }
         
-        /* CENTERING BUTTON LEFT */
+        /* BUTON CENTRARE STANGA */
         #center-btn {
             width: 60px;
             height: 60px;
@@ -212,7 +213,7 @@
             background: #7c3aed;
         }
 
-        /* GPS BUTTON LEFT */
+        /* BUTON GPS STANGA */
         #gps-btn {
             width: 60px;
             height: 60px;
@@ -244,7 +245,7 @@
             background: #f59e0b;
         }
 
-        /* MODAL BUTTON STYLES */
+        /* STILURI BUTOANE MODALE */
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
@@ -394,6 +395,23 @@
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
         
+        .street-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #f9fafb;
+        }
+        
+        .street-input:focus {
+            outline: none;
+            border-color: #dc2626;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
         .icon-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -520,7 +538,7 @@
             background: #fee2e2;
         }
         
-        /* HOUSE LIST */
+        /* LISTA CASE */
         .list-container {
             padding: 0 1.25rem 1.25rem;
             max-height: 50vh;
@@ -678,7 +696,7 @@
             bottom: 0;
         }
         
-        /* ANIMATED TREE - FIXED ON ALL DEVICES */
+        /* BRAD ANIMAT - FIXAT PE TOATE DISPOZITIVELE */
         .connection-status {
             position: fixed;
             top: 80px;
@@ -808,7 +826,7 @@
             backdrop-filter: blur(4px);
         }
 
-        /* Custom tooltip for detailed information */
+        /* Tooltip personalizat pentru informații detaliate */
         .custom-tooltip {
             background: white;
             border: 2px solid #dc2626;
@@ -853,7 +871,7 @@
             margin-top: 8px;
         }
 
-        /* Styles for visited markers */
+        /* Stiluri pentru marker-ele vizitate */
         .visited-marker {
             opacity: 0.6;
             filter: grayscale(0.7) brightness(1.2);
@@ -877,7 +895,7 @@
             z-index: 1000;
         }
         
-        /* Delete button in tooltip */
+        /* Buton ștergere în tooltip */
         .delete-btn {
             background: #dc2626;
             color: white;
@@ -896,7 +914,7 @@
             background: #b91c1c;
         }
         
-        /* Delete confirmation modal */
+        /* Modal confirmare ștergere */
         .delete-confirm-modal {
             max-width: 400px;
         }
@@ -907,7 +925,7 @@
             padding: 0 1.25rem 1.25rem;
         }
 
-        /* Styles for info modal */
+        /* Stiluri pentru modalul de info */
         .info-content {
             padding: 0 1.25rem 1.25rem;
         }
@@ -1007,7 +1025,7 @@
             line-height: 1.4;
         }
         
-        /* On mobile, positioning adjustments */
+        /* Pe mobil, ajustări de poziționare */
         @media (max-width: 767px) {
             .connection-status {
                 top: 70px;
@@ -1063,7 +1081,7 @@
             }
         }
         
-        /* On desktop */
+        /* Pe desktop */
         @media (min-width: 768px) {
             #header p {
                 display: block;
@@ -1090,16 +1108,16 @@
             <div id="header-title">
                 <span style="font-size: 1.5rem;">📍</span>
                 <div>
-                    <h1>Welcome Carolers 🎄</h1>
-                    <p>Global Map - Add your house to the map!</p>
+                    <h1>Colindători Bine Veniți 🎄</h1>
+                    <p>Cartier Tineri, Buftea - Adaugă casa ta pe hartă!</p>
                 </div>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button id="info-btn" title="Usage instructions">
+                <button id="info-btn" title="Instrucțiuni de utilizare">
                     ❓ Info
                 </button>
-                <div id="pin-count" title="Click for house list">
-                    <span id="pin-count-text">0 houses</span>
+                <div id="pin-count" title="Click pentru lista caselor">
+                    <span id="pin-count-text">0 case</span>
                 </div>
             </div>
         </div>
@@ -1110,27 +1128,27 @@
             <div id="map"></div>
         </div>
         
-        <!-- LEFT BUTTONS -->
+        <!-- BUTOANE STANGA -->
         <div id="left-controls">
-            <button id="center-btn" title="Center map on default location">
+            <button id="center-btn" title="Centrare hartă pe Cartierul Tineri">
                 🏠
             </button>
-            <button id="gps-btn" title="Use your current location">
+            <button id="gps-btn" title="Folosește locația ta actuală">
                 📍
             </button>
         </div>
         
-        <!-- RIGHT BUTTONS -->
+        <!-- BUTOANE DREAPTA -->
         <div id="right-controls">
-            <button id="share-btn-right" title="Share on WhatsApp">
+            <button id="share-btn-right" title="Share pe WhatsApp">
                 📱
             </button>
-            <button id="add-btn-right" title="Add house">
+            <button id="add-btn-right" title="Adaugă casă">
                 +
             </button>
         </div>
         
-        <!-- Animated tree for connection status -->
+        <!-- Brad animat pentru status conexiune -->
         <div id="connection-status" class="connection-status">
             <div class="christmas-tree">
                 <div class="tree-top">🎄</div>
@@ -1143,235 +1161,237 @@
             </div>
         </div>
         
-        <!-- Overlay for modals -->
+        <!-- Overlay pentru modale -->
         <div id="modal-overlay" class="modal-overlay hidden"></div>
         
-        <!-- Info/Help Modal -->
+        <!-- Modal Info/Help CORECTAT -->
         <div id="info-modal" class="modal modal-info hidden">
             <div class="modal-header">
                 <h3 class="modal-title">
                     <span style="font-size: 1.5rem;">❓</span>
-                    Usage Instructions
+                    Instrucțiuni de utilizare
                 </h3>
                 <button class="close-btn" onclick="closeInfoModal()">×</button>
             </div>
             
             <div class="info-content">
-                <!-- Name section at the beginning -->
+                <!-- Secțiunea cu numele la început -->
                 <div style="text-align: center; padding: 1rem; background: #f0f9ff; border-radius: 0.75rem; margin-bottom: 1.5rem;">
                     <p style="font-weight: 600; color: #0369a1; margin-bottom: 0.5rem;">
-                        🎄 <strong>Free project</strong> created by <strong>Alex Chiriac</strong>
+                        🎄 <strong>Proiect gratuit</strong> realizat de <strong>Alex Chiriac</strong>
                     </p>
                     <p style="font-size: 0.75rem; color: #6b7280;">
-                        © 2025 Welcome Carolers - Global Map
+                        © 2025 Colindători Bine Veniți - Cartier Tineri Buftea
                     </p>
                 </div>
 
                 <div class="info-section">
-                    <h4 class="info-title">🎯 How to add your house:</h4>
+                    <h4 class="info-title">🎯 Cum adaugi casa ta:</h4>
                     <ol class="info-steps">
                         <li class="info-step">
                             <div class="step-number">1</div>
                             <div class="step-content">
-                                <div class="step-title">Select location</div>
-                                <div class="step-description">Click on the map in front of your house or use the 📍 GPS button</div>
+                                <div class="step-title">Selectează locația</div>
+                                <div class="step-description">Click pe hartă în fața casei tale sau folosește butonul 📍 GPS</div>
                             </div>
                         </li>
                         <li class="info-step">
                             <div class="step-number">2</div>
                             <div class="step-content">
-                                <div class="step-title">Fill out the form</div>
-                                <div class="step-description">Press the "+" button and complete your house details</div>
+                                <div class="step-title">Completează formularul</div>
+                                <div class="step-description">Apasă butonul "+" și completează detaliile casei tale</div>
                             </div>
                         </li>
                         <li class="info-step">
                             <div class="step-number">3</div>
                             <div class="step-content">
-                                <div class="step-title">Done!</div>
-                                <div class="step-description">Your house will appear on the map for carolers</div>
+                                <div class="step-title">Gata!</div>
+                                <div class="step-description">Casa ta va apărea pe hartă pentru colindători</div>
                             </div>
                         </li>
                     </ol>
                 </div>
                 
                 <div class="info-section">
-                    <h4 class="info-title">🎄 How to carol:</h4>
+                    <h4 class="info-title">🎄 Cum colinzi:</h4>
                     <ol class="info-steps">
                         <li class="info-step">
                             <div class="step-number">1</div>
                             <div class="step-content">
-                                <div class="step-title">See available houses</div>
-                                <div class="step-description">Houses with emojis on the map welcome carolers</div>
+                                <div class="step-title">Vezi casele disponibile</div>
+                                <div class="step-description">Casele cu emoji-uri pe hartă primesc colindători</div>
                             </div>
                         </li>
                         <li class="info-step">
                             <div class="step-number">2</div>
                             <div class="step-content">
-                                <div class="step-title">Mark as visited</div>
-                                <div class="step-description">Single click on a house to mark it as visited</div>
+                                <div class="step-title">Marchează vizitată</div>
+                                <div class="step-description">Click simplu pe o casă pentru a o marca ca vizitată</div>
                             </div>
                         </li>
                         <li class="info-step">
                             <div class="step-number">3</div>
                             <div class="step-content">
-                                <div class="step-title">Delete house (if needed)</div>
-                                <div class="step-description">Double-click on a house to delete it (with password)</div>
+                                <div class="step-title">Șterge casa (dacă e necesar)</div>
+                                <div class="step-description">Dublu-click pe o casă pentru a o șterge (cu parolă)</div>
                             </div>
                         </li>
                     </ol>
                 </div>
 
                 <div class="info-section">
-                    <h4 class="info-title">🎛️ Buttons and features:</h4>
+                    <h4 class="info-title">🎛️ Butoane și funcționalități:</h4>
                     <ol class="info-steps">
                         <li class="info-step">
                             <div class="step-icon">🏠</div>
                             <div class="step-content">
-                                <div class="step-title">Center map</div>
-                                <div class="step-description">The 🏠 button recenters the map to the default location</div>
+                                <div class="step-title">Centrare hartă</div>
+                                <div class="step-description">Butonul 🏠 recentrează harta pe întregul Cartier Tineri</div>
                             </div>
                         </li>
                         <li class="info-step">
                             <div class="step-icon">📍</div>
                             <div class="step-content">
-                                <div class="step-title">Your location</div>
-                                <div class="step-description">The 📍 button uses GPS to position you on the map</div>
+                                <div class="step-title">Locația ta</div>
+                                <div class="step-description">Butonul 📍 folosește GPS-ul pentru a te poziționa pe hartă</div>
                             </div>
                         </li>
                         <li class="info-step">
                             <div class="step-icon">📋</div>
                             <div class="step-content">
-                                <div class="step-title">House list</div>
-                                <div class="step-description">Press the house count (top left) for ordered list by streets</div>
+                                <div class="step-title">Lista caselor</div>
+                                <div class="step-description">Apasă pe numărul de case (colț stânga) pentru listă ordonată pe străzi</div>
                             </div>
                         </li>
                         <li class="info-step">
                             <div class="step-icon">🔄</div>
                             <div class="step-content">
-                                <div class="step-title">Reset visits</div>
-                                <div class="step-description">The "Reset Visits" button clears all visited house markings</div>
+                                <div class="step-title">Reset vizite</div>
+                                <div class="step-description">Butonul "Reset Vizite" șterge toate marcajele de case vizitate</div>
                             </div>
                         </li>
                     </ol>
                 </div>
                 
                 <div class="tip-box">
-                    <div class="tip-title">💡 Useful tips:</div>
+                    <div class="tip-title">💡 Sfaturi utile:</div>
                     <div class="tip-content">
-                        • You can set a password when adding your house to be able to delete it later<br>
-                        • Houses marked with ✅ have already been caroled<br>
-                        • Share the map with friends using the 📱 button<br>
-                        • You can add houses anywhere in the world
+                        • Poți seta o parolă când adaugi casa pentru a o putea șterge mai târziu<br>
+                        • Casele marcate cu ✅ au fost deja colindate<br>
+                        • Share-uiește harta cu prietenii folosind butonul 📱<br>
+                        • Zona activă este delimitată cu roșu pe hartă
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Add modal -->
+        <!-- Modal adaugare -->
         <div id="add-modal" class="modal modal-add hidden">
             <div class="modal-header">
                 <h3 class="modal-title">
                     <span style="font-size: 1.5rem;">+</span>
-                    Add Your House
+                    Adaugă Casa Ta
                 </h3>
                 <button class="close-btn" onclick="closeAddModal()">×</button>
             </div>
             
             <div id="location-success" class="success-box hidden">
-                <p class="success-text">✓ Location selected</p>
-                <p class="hint-text">Click on the map or use GPS to change location</p>
+                <p class="success-text">✓ Locație selectată</p>
+                <p class="hint-text">Click pe hartă sau folosește GPS pentru a schimba locația</p>
             </div>
             
             <div id="error-message" class="error-box hidden">
                 <div style="display: flex; gap: 0.5rem;">
                     <span style="font-size: 1.25rem;">❌</span>
                     <div style="flex: 1;">
-                        <p class="error-text" style="font-weight: 600; margin-bottom: 0.25rem;">Error</p>
+                        <p class="error-text" style="font-weight: 600; margin-bottom: 0.25rem;">Eroare</p>
                         <p class="error-text" id="error-text" style="white-space: pre-line;"></p>
                     </div>
                 </div>
                 <button onclick="closeError()" style="margin-top: 0.5rem; font-size: 0.75rem; color: #991b1b; background: none; border: none; cursor: pointer; font-weight: 500;">
-                    Close
+                    Închide
                 </button>
             </div>
             
             <form id="add-form" onsubmit="handleSubmit(event)">
                 <div class="form-group">
-                    <label class="form-label">Choose your Christmas icon 🎅</label>
+                    <label class="form-label">Alege iconița ta de Crăciun 🎅</label>
                     <div class="icon-grid" id="icon-grid"></div>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">👤 Family Name *</label>
-                    <input type="text" class="form-input" id="name" placeholder="Family name" maxlength="50" required>
+                    <label class="form-label">👤 Nume Familie *</label>
+                    <input type="text" class="form-input" id="name" placeholder="Numele familiei" maxlength="50" required>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">🏠 Street *</label>
-                    <input type="text" class="form-input" id="address" placeholder="Street name" maxlength="100" required>
+                    <label class="form-label">🏠 Strada *</label>
+                    <div id="street-container">
+                        <!-- Aici va fi adăugat input-ul cu datalist -->
+                    </div>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">House Number *</label>
-                    <input type="text" class="form-input" id="streetNumber" placeholder="House number" maxlength="10" required>
+                    <label class="form-label">Număr Poștal *</label>
+                    <input type="text" class="form-input" id="streetNumber" placeholder="Număr poștal" maxlength="10" required>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">🕐 Preferred schedule</label>
-                    <input type="text" class="form-input" id="schedule" placeholder="Ex: Dec 24, 18:00-21:00" maxlength="50">
+                    <label class="form-label">🕐 Program preferat</label>
+                    <input type="text" class="form-input" id="schedule" placeholder="Ex: 24 dec, 18:00-21:00" maxlength="50">
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Additional details</label>
-                    <textarea class="form-textarea" id="notes" rows="3" placeholder="Ex: Ring the bell, green door" maxlength="200"></textarea>
+                    <label class="form-label">Detalii suplimentare</label>
+                    <textarea class="form-textarea" id="notes" rows="3" placeholder="Ex: Sunați la interfon, poartă verde" maxlength="200"></textarea>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Password for deletion (optional)</label>
-                    <input type="password" class="form-input" id="password" placeholder="Set a password" maxlength="20">
-                    <p class="hint-text">💡 Only you will be able to delete the pin with this password</p>
+                    <label class="form-label">Parolă pentru ștergere (opțional)</label>
+                    <input type="password" class="form-input" id="password" placeholder="Setează o parolă" maxlength="20">
+                    <p class="hint-text">💡 Doar tu vei putea șterge pin-ul cu această parolă</p>
                 </div>
                 
                 <div class="submit-btn-container">
                     <button type="submit" class="btn btn-primary" style="width: 100%;">
-                        Add to Map
+                        Adaugă pe Hartă
                     </button>
                 </div>
             </form>
         </div>
         
-        <!-- View modal -->
+        <!-- Modal vizualizare -->
         <div id="view-modal" class="modal modal-view hidden">
             <div id="view-content"></div>
             <div id="delete-form" class="hidden">
                 <div class="modal-header">
-                    <h3 class="modal-title" style="color: #dc2626;">Delete Pin</h3>
+                    <h3 class="modal-title" style="color: #dc2626;">Șterge Pin</h3>
                     <button class="close-btn" onclick="closeDeleteForm()">×</button>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">Enter password:</label>
-                    <input type="password" class="form-input" id="delete-password" placeholder="Deletion password" required>
-                    <p class="hint-text">💡 Enter your password if you set one, or ask the admin</p>
+                    <label class="form-label">Introdu parola:</label>
+                    <input type="password" class="form-input" id="delete-password" placeholder="Parola de ștergere" required>
+                    <p class="hint-text">💡 Introdu parola ta dacă ai setat-o, sau cere adminului</p>
                 </div>
                 
                 <div class="action-buttons">
                     <button onclick="confirmDelete()" class="btn btn-danger" style="flex: 1;">
-                        Delete Pin
+                        Șterge Pin
                     </button>
                     <button onclick="closeDeleteForm()" class="btn btn-secondary" style="flex: 1;">
-                        Cancel
+                        Anulează
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- House list modal -->
+        <!-- Modal lista case -->
         <div id="list-modal" class="modal modal-list hidden">
             <div class="modal-header">
                 <h3 class="modal-title">
                     <span style="font-size: 1.5rem;">📋</span>
-                    House List
+                    Lista Caselor
                 </h3>
                 <button class="close-btn" onclick="closeListModal()">×</button>
             </div>
@@ -1379,36 +1399,36 @@
             <div class="admin-controls" id="admin-controls">
                 <div class="admin-title">
                     <span>🔧</span>
-                    Admin Control
+                    Control Admin
                 </div>
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button onclick="showAdminLogin()" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;">
-                        Admin Login
+                        Login Admin
                     </button>
                     <button onclick="resetAllVisited()" class="btn btn-danger" style="font-size: 0.75rem; padding: 0.5rem 1rem;" id="reset-btn">
-                        Reset Visits
+                        Reset Vizite
                     </button>
                 </div>
             </div>
             
             <div class="list-container" id="list-container">
-                <!-- Houses will be displayed here -->
+                <!-- Aici se vor afișa casele -->
             </div>
         </div>
         
-        <!-- Admin login modal -->
+        <!-- Modal login admin -->
         <div id="admin-login-modal" class="modal modal-view hidden">
             <div class="modal-header">
                 <h3 class="modal-title">
                     <span style="font-size: 1.5rem;">🔧</span>
-                    Admin Login
+                    Login Admin
                 </h3>
                 <button class="close-btn" onclick="closeAdminLogin()">×</button>
             </div>
             
             <div class="form-group">
-                <label class="form-label">Admin Password:</label>
-                <input type="password" class="form-input" id="admin-password" placeholder="Enter admin password" required>
+                <label class="form-label">Parolă Admin:</label>
+                <input type="password" class="form-input" id="admin-password" placeholder="Introdu parola de admin" required>
             </div>
             
             <div class="action-buttons">
@@ -1416,38 +1436,38 @@
                     Login
                 </button>
                 <button onclick="closeAdminLogin()" class="btn btn-secondary" style="flex: 1;">
-                    Cancel
+                    Anulează
                 </button>
             </div>
         </div>
         
-        <!-- Delete confirmation modal -->
+        <!-- Modal de confirmare ștergere -->
         <div id="delete-confirm-modal" class="modal delete-confirm-modal hidden">
             <div class="modal-header">
                 <h3 class="modal-title" style="color: #dc2626;">
                     <span style="font-size: 1.5rem;">🗑️</span>
-                    Confirm Deletion
+                    Confirmă Ștergerea
                 </h3>
                 <button class="close-btn" onclick="closeDeleteConfirmModal()">×</button>
             </div>
             
             <div class="form-group">
-                <p>Are you sure you want to delete this house?</p>
+                <p>Ești sigur că vrei să ștergi această casă?</p>
                 <p class="hint-text" id="delete-house-info"></p>
             </div>
             
             <div class="form-group">
-                <label class="form-label">Enter password:</label>
-                <input type="password" class="form-input" id="delete-confirm-password" placeholder="Deletion password" required>
-                <p class="hint-text">💡 Enter your password if you set one, or the admin password</p>
+                <label class="form-label">Introdu parola:</label>
+                <input type="password" class="form-input" id="delete-confirm-password" placeholder="Parola de ștergere" required>
+                <p class="hint-text">💡 Introdu parola ta dacă ai setat-o, sau parola de admin</p>
             </div>
             
             <div class="delete-actions">
                 <button onclick="confirmPinDelete()" class="btn btn-danger" style="flex: 1;">
-                    Delete
+                    Șterge
                 </button>
                 <button onclick="closeDeleteConfirmModal()" class="btn btn-secondary" style="flex: 1;">
-                    Cancel
+                    Anulează
                 </button>
             </div>
         </div>
@@ -1455,27 +1475,42 @@
         <div id="loading">
             <div style="text-align: center;">
                 <div class="spinner"></div>
-                <p style="margin-top: 1rem; color: #6b7280; font-weight: 500;">Loading map...</p>
+                <p style="margin-top: 1rem; color: #6b7280; font-weight: 500;">Se încarcă harta...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Firebase Configuration 
+        // Configurație Firebase
         const firebaseConfig = {
-            apiKey: "AIzaSyBFg-D3v6iYbaqDFs8cZBIsPeKVkByrmM0",
-            authDomain: "carollers2025-9f727.firebaseapp.com",
-            projectId: "carollers2025-9f727",
-            storageBucket: "carollers2025-9f727.firebasestorage.app",
-            messagingSenderId: "611918656458",
-            appId: "1:611918656458:web:c3688cfbc6813cd8c21533"
+          apiKey: "AIzaSyBFg-D3v6iYbaqDFs8cZBIsPeKVkByrmM0",
+          authDomain: "carollers2025-9f727.firebaseapp.com",
+          projectId: "carollers2025-9f727",
+          storageBucket: "carollers2025-9f727.firebasestorage.app",
+          messagingSenderId: "611918656458",
+          appId: "1:611918656458:web:c3688cfbc6813cd8c21533"
         };
 
-        const ADMIN_PASSWORD = 'carol2025';
+
+        const ADMIN_PASSWORD = 'colind2025';
         const ICONS = ['🎄', '🎅', '⭐', '🔔', '🎁', '❄️', '🕯️', '🦌', '🧦', '🍪', '🤶', '✨'];
         
-        // Default center coordinates - Bucharest
-        const DEFAULT_CENTER = [44.47729443095744, 26.074460492097725];
+        // STRĂZI CORECTATE
+        const PREDEFINED_STREETS = [
+            "Catinei", "Ciocarliei", "Codrului", "Dafinului", "Dropiei", 
+            "Frasinului", "Gutuiului", "Lujerului", "Macesului", "Magnoliei",
+            "Mesteacanului", "Nuferilor", "Porumbacului", "Salviei", "Salciei",
+            "Trestiei", "Trifoiului", "Ulmului"
+        ].sort();
+        
+        const ZONE_BOUNDS = [
+            [44.548509, 25.932824], [44.545532, 25.927008],  
+            [44.542515, 25.930210], [44.545553, 25.935854]
+        ];
+        
+        // Calculăm bounds pentru întreaga zonă pentru zoom optim
+        const ZONE_BOUNDS_LATLNG = ZONE_BOUNDS.map(coord => [coord[0], coord[1]]);
+        const ZONE_CENTER = [44.545593, 25.931531];
         
         let map;
         let markers = [];
@@ -1485,6 +1520,7 @@
         let selectedPin = null;
         let isConnected = false;
         let userLocationMarker = null;
+        let zonePolygon = null;
         let isAdmin = false;
         let visitedHouses = JSON.parse(localStorage.getItem('visitedHouses') || '{}');
         let lastClickTime = 0;
@@ -1495,14 +1531,18 @@
         function init() {
             initMap();
             initIconGrid();
+            initStreetInput();
             setupEventListeners();
-            initFirebase(); // Initialize Firebase immediately
+            
+            setTimeout(() => {
+                initFirebase();
+            }, 500);
         }
         
         function setupEventListeners() {
             document.getElementById('add-btn-right').addEventListener('click', openAddModal);
             document.getElementById('gps-btn').addEventListener('click', getUserLocation);
-            document.getElementById('center-btn').addEventListener('click', centerToDefault);
+            document.getElementById('center-btn').addEventListener('click', centerToCartier);
             document.getElementById('share-btn-right').addEventListener('click', shareOnWhatsApp);
             document.getElementById('pin-count').addEventListener('click', showListModal);
             document.getElementById('info-btn').addEventListener('click', showInfoModal);
@@ -1518,11 +1558,11 @@
         }
         
         function shareOnWhatsApp() {
-            const text = '🎄 Welcome Carolers! 🎅\n\nMap of houses that welcome carolers.\nAdd your house too: ' + window.location.href;
+            const text = '🎄 Colindatori Bine Veniti! 🎅\n\nHarta caselor care primesc colindatori.\nAdauga si casa ta: ' + window.location.href;
             
             if (navigator.share) {
                 navigator.share({
-                    title: 'Carolers Map',
+                    title: 'Colindatori Buftea',
                     text: text
                 });
             } else {
@@ -1531,8 +1571,22 @@
             }
         }
         
-        function centerToDefault() {
-            map.setView(DEFAULT_CENTER, 15);
+        function centerToCartier() {
+            // Folosim fitBounds pentru a afișa întreaga zonă
+            map.fitBounds(ZONE_BOUNDS_LATLNG, { padding: [20, 20] });
+        }
+        
+        function isInZone(lat, lng) {
+            let inside = false;
+            for (let i = 0, j = ZONE_BOUNDS.length - 1; i < ZONE_BOUNDS.length; j = i++) {
+                const xi = ZONE_BOUNDS[i][1], yi = ZONE_BOUNDS[i][0];
+                const xj = ZONE_BOUNDS[j][1], yj = ZONE_BOUNDS[j][0];
+                
+                const intersect = ((yi > lat) !== (yj > lat)) &&
+                    (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
         }
         
         function initMap() {
@@ -1543,12 +1597,32 @@
                 maxZoom: 19
             }).addTo(map);
             
-            // Set initial view to default coordinates
-            map.setView(DEFAULT_CENTER, 15);
+            // Setăm view-ul inițial să afișeze întreaga zonă
+            map.fitBounds(ZONE_BOUNDS_LATLNG, { padding: [20, 20] });
+            
+            // Adaugă poligonul zonei
+            zonePolygon = L.polygon(ZONE_BOUNDS, {
+                color: '#dc2626',
+                weight: 3,
+                fillColor: '#fecaca',
+                fillOpacity: 0.2,
+                opacity: 0.8
+            }).addTo(map);
+            
+            zonePolygon.bindTooltip('🎄 Cartierul Tineri - Zona Colindători', {
+                permanent: false,
+                direction: 'center',
+                className: 'zone-tooltip'
+            });
             
             map.on('click', (e) => {
                 const lat = e.latlng.lat;
                 const lng = e.latlng.lng;
+                
+                if (!isInZone(lat, lng)) {
+                    showError('❌ Poți adăuga doar case din Cartierul Tineri!\n\nSelectează o locație în interiorul zonei marcate cu roșu.');
+                    return;
+                }
                 
                 clickedLocation = { lat, lng };
                 
@@ -1573,7 +1647,7 @@
             setTimeout(() => {
                 map.invalidateSize();
                 document.getElementById('loading').classList.add('hidden');
-            }, 500);
+            }, 300);
             
             window.addEventListener('resize', () => {
                 setTimeout(() => {
@@ -1596,6 +1670,43 @@
             });
         }
         
+        function initStreetInput() {
+            const container = document.getElementById('street-container');
+            container.innerHTML = '';
+            
+            const datalist = document.createElement('datalist');
+            datalist.id = 'streets-list';
+            
+            PREDEFINED_STREETS.forEach(street => {
+                const option = document.createElement('option');
+                option.value = street;
+                datalist.appendChild(option);
+            });
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'street-input';
+            input.id = 'address';
+            input.placeholder = 'Începe să tastezi numele străzii...';
+            input.setAttribute('list', 'streets-list');
+            input.required = true;
+            input.autocomplete = 'off';
+            
+            input.addEventListener('change', function() {
+                validateStreetInput(this);
+            });
+            
+            container.appendChild(input);
+            container.appendChild(datalist);
+        }
+        
+        function validateStreetInput(inputElement) {
+            const value = inputElement.value.trim();
+            if (value && !PREDEFINED_STREETS.includes(value)) {
+                // Mesaj eliminat
+            }
+        }
+        
         function selectIcon(icon) {
             selectedIcon = icon;
             document.querySelectorAll('.icon-btn').forEach(btn => {
@@ -1605,12 +1716,12 @@
         
         function initFirebase() {
             try {
-                // Initialize Firebase
-                firebase.initializeApp(firebaseConfig);
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
                 
                 const database = firebase.database();
                 
-                // Check connection status
                 const connectedRef = database.ref(".info/connected");
                 connectedRef.on("value", function(snap) {
                     isConnected = snap.val() === true;
@@ -1618,15 +1729,11 @@
                     
                     if (isConnected) {
                         loadPins();
-                    } else {
-                        // If not connected to Firebase, use local storage as fallback
-                        loadFromLocalStorage();
                     }
                 });
                 
             } catch (error) {
-                console.log('Firebase initialization error, using local storage:', error);
-                loadFromLocalStorage();
+                loadDemoData();
             }
         }
         
@@ -1636,7 +1743,7 @@
             if (isConnected) {
                 statusElement.className = 'connection-status connected';
             } else {
-                statusElement.className = 'connection-status';
+                statusElement.className = 'connection-status disconnected';
             }
         }
         
@@ -1649,31 +1756,33 @@
                         snapshot.forEach((child) => {
                             pins.push({ id: child.key, ...child.val() });
                         });
-                        // Save to local storage as backup
-                        localStorage.setItem('carolersPins', JSON.stringify(pins));
                     }
                     updateMap();
                     updatePinCount();
                 }, (error) => {
-                    console.log('Firebase error, loading from local storage');
-                    loadFromLocalStorage();
+                    loadDemoData();
                 });
             } catch (error) {
-                loadFromLocalStorage();
+                loadDemoData();
             }
         }
         
-        function loadFromLocalStorage() {
-            const savedPins = localStorage.getItem('carolersPins');
-            if (savedPins) {
-                pins = JSON.parse(savedPins);
-            } else {
-                pins = [];
-            }
+        function loadDemoData() {
+            pins = [
+                {
+                    id: 'demo1',
+                    name: 'Familia Crăciun',
+                    address: 'Polul Nord',
+                    streetNumber: '1',
+                    icon: '🎄',
+                    lat: 44.545593,
+                    lng: 25.931531,
+                    schedule: '25 dec, 00:00-23:59',
+                    notes: 'Sunați din zurgălăi'
+                }
+            ];
             updateMap();
             updatePinCount();
-            isConnected = false;
-            updateConnectionStatus();
         }
         
         function updateMap() {
@@ -1701,13 +1810,14 @@
                     })
                 }).addTo(map);
                 
+                // Tooltip simplu fără instrucțiuni repetitive
                 let tooltipContent = `
                     <div class="custom-tooltip">
                         <div class="tooltip-family">
                             ${isVisited ? '✅ ' : ''}${pin.icon || '🎄'} ${pin.name}
                         </div>
                         <div class="tooltip-address">
-                            📍 ${pin.address}, No. ${pin.streetNumber}
+                            📍 Str. ${pin.address}, Nr. ${pin.streetNumber}
                         </div>
                 `;
                 
@@ -1736,14 +1846,17 @@
                     className: 'custom-tooltip-container'
                 });
                 
+                // Sistem dublu-click pentru ștergere
                 marker.on('click', (e) => {
                     const currentTime = new Date().getTime();
                     const timeDiff = currentTime - lastClickTime;
                     
                     if (timeDiff < 300 && timeDiff > 0) {
+                        // Dublu-click detectat - arată modal de ștergere
                         clearTimeout(clickTimer);
                         showDeleteModalForPin(pin);
                     } else {
+                        // Click simplu - marchează vizitată
                         clickTimer = setTimeout(() => {
                             toggleVisited(pin.id);
                         }, 300);
@@ -1759,7 +1872,7 @@
         function showDeleteModalForPin(pin) {
             selectedPin = pin;
             document.getElementById('delete-house-info').textContent = 
-                `${pin.icon || '🎄'} ${pin.name} - ${pin.address}, No. ${pin.streetNumber}`;
+                `${pin.icon || '🎄'} ${pin.name} - Str. ${pin.address}, Nr. ${pin.streetNumber}`;
             document.getElementById('delete-confirm-password').value = '';
             showModal('delete-confirm-modal');
         }
@@ -1775,7 +1888,6 @@
             const password = document.getElementById('delete-confirm-password').value;
             
             if (!password) {
-                showError('Please enter a password');
                 return;
             }
             
@@ -1783,40 +1895,27 @@
             const isOwner = selectedPin.password && password === selectedPin.password;
             
             if (!isAdminUser && !isOwner) {
-                showError('Incorrect password');
+                document.getElementById('delete-confirm-password').value = '';
                 return;
             }
             
             try {
-                if (isConnected) {
-                    const database = firebase.database();
-                    database.ref('pins/' + selectedPin.id).remove()
-                        .then(() => {
-                            closeDeleteConfirmModal();
-                            showToast('House deleted successfully', 'success');
-                        })
-                        .catch((error) => {
-                            showError('Error deleting: ' + error.message);
-                        });
-                } else {
-                    // Delete from local storage
-                    pins = pins.filter(pin => pin.id !== selectedPin.id);
-                    localStorage.setItem('carolersPins', JSON.stringify(pins));
-                    updateMap();
-                    updatePinCount();
-                    closeDeleteConfirmModal();
-                    showToast('House deleted successfully', 'success');
-                }
+                const database = firebase.database();
+                database.ref('pins/' + selectedPin.id).remove()
+                    .then(() => {
+                        closeDeleteConfirmModal();
+                    })
+                    .catch((error) => {
+                    });
             } catch (error) {
-                showError('Error deleting house');
             }
         }
         
         function updatePinCount() {
             const count = pins.length;
             const visitedCount = Object.keys(visitedHouses).length;
-            const text = count === 1 ? 'house' : 'houses';
-            const visitedText = visitedCount > 0 ? ` (${visitedCount} visited)` : '';
+            const text = count === 1 ? 'casă' : 'case';
+            const visitedText = visitedCount > 0 ? ` (${visitedCount} vizitate)` : '';
             document.getElementById('pin-count-text').textContent = `${count} ${text}${visitedText}`;
         }
         
@@ -1843,20 +1942,21 @@
         
         function openAddModal() {
             if (!clickedLocation) {
-                showError('Please first select a location on the map or use the GPS button!');
+                showError('Te rog selectează mai întâi o locație pe hartă sau folosește butonul GPS!');
                 return;
             }
             showModal('add-modal');
+            initStreetInput();
         }
         
         function closeAddModal() {
             hideModal('add-modal');
             document.getElementById('add-form').reset();
             document.getElementById('error-message').classList.add('hidden');
-            document.getElementById('location-success').classList.add('hidden');
             clickedLocation = null;
             selectedIcon = '🎄';
             initIconGrid();
+            initStreetInput();
             
             if (window.tempMarker) {
                 window.tempMarker.remove();
@@ -1928,28 +2028,24 @@
                 isAdmin = true;
                 closeAdminLogin();
                 updateMap();
-                showToast('Admin login successful', 'success');
                 
                 if (!document.getElementById('list-modal').classList.contains('hidden')) {
                     showListModal();
                 }
-            } else {
-                showError('Incorrect admin password');
             }
         }
         
         function showListModal() {
             if (pins.length === 0) {
-                const listContainer = document.getElementById('list-container');
-                listContainer.innerHTML = '<div class="empty-list">No houses added yet</div>';
-                showModal('list-modal');
                 return;
             }
             
+            // Sortare corectă numerică pentru numerele poștale
             const sortedPins = [...pins].sort((a, b) => {
-                const addressCompare = a.address.localeCompare(b.address);
-                if (addressCompare !== 0) return addressCompare;
+                const streetCompare = a.address.localeCompare(b.address);
+                if (streetCompare !== 0) return streetCompare;
                 
+                // Extrage numerele din string-ul streetNumber pentru sortare numerică
                 const numA = parseInt(a.streetNumber.replace(/\D/g, '')) || 0;
                 const numB = parseInt(b.streetNumber.replace(/\D/g, '')) || 0;
                 return numA - numB;
@@ -1966,20 +2062,18 @@
                 const adminControls = `
                     <div class="checkbox-container">
                         <div class="checkbox ${isVisited ? 'checked' : ''}" onclick="toggleVisited('${pin.id}')"></div>
-                        <span class="checkbox-label" onclick="toggleVisited('${pin.id}')">I caroled here</span>
+                        <span class="checkbox-label" onclick="toggleVisited('${pin.id}')">Am colindat aici</span>
                     </div>
-                    ${isAdmin ? `
                     <button class="delete-btn" onclick="showDeleteModalForPinFromList('${pin.id}')" style="margin-top: 8px; font-size: 11px; padding: 4px 8px;">
-                        🗑️ Delete
+                        🗑️ Șterge
                     </button>
-                    ` : ''}
                 `;
                 
                 listItem.innerHTML = `
                     <div class="list-icon">${isVisited ? '✅' : (pin.icon || '🎄')}</div>
                     <div class="list-details">
-                        <div class="list-family">${pin.name} ${isVisited ? '<span style="color: #059669; font-size: 12px;">(Visited)</span>' : ''}</div>
-                        <div class="list-address">${pin.address}, No. ${pin.streetNumber}</div>
+                        <div class="list-family">${pin.name} ${isVisited ? '<span style="color: #059669; font-size: 12px;">(Vizitată)</span>' : ''}</div>
+                        <div class="list-address">Str. ${pin.address}, Nr. ${pin.streetNumber}</div>
                         ${pin.schedule ? `<div class="list-schedule">🕐 ${pin.schedule}</div>` : ''}
                         ${pin.notes ? `<div class="list-notes">📝 ${pin.notes}</div>` : ''}
                         ${adminControls}
@@ -2011,13 +2105,28 @@
             const address = document.getElementById('address').value.trim();
             const streetNumber = document.getElementById('streetNumber').value.trim();
             
-            if (!name || !address || !streetNumber) {
-                showError('Please complete all required fields:\n\n• Family Name\n• Street\n• House Number');
+            const missingFields = [];
+            if (!name) missingFields.push('Nume Familie');
+            if (!address) missingFields.push('Stradă');
+            if (!streetNumber) missingFields.push('Număr Poștal');
+            
+            if (missingFields.length > 0) {
+                showError('Te rog completează următoarele câmpuri obligatorii:\n\n• ' + missingFields.join('\n• '));
                 return;
             }
             
             if (!clickedLocation) {
-                showError('Please select a location on the map!');
+                showError('Te rog selectează o locație pe hartă sau folosește GPS-ul!');
+                return;
+            }
+            
+            if (!isInZone(clickedLocation.lat, clickedLocation.lng)) {
+                showError('❌ Poți adăuga doar case din Cartierul Tineri!\n\nSelectează o locație în interiorul zonei marcate cu roșu.');
+                return;
+            }
+            
+            if (!isConnected) {
+                showError('Nu ești conectat la internet. Te rog verifică conexiunea și încearcă din nou.');
                 return;
             }
             
@@ -2035,41 +2144,21 @@
             };
             
             try {
-                if (isConnected) {
-                    const database = firebase.database();
-                    database.ref('pins').push(pinData)
-                        .then(() => {
-                            closeAddModal();
-                            showToast('House added successfully!', 'success');
-                            
-                            if (window.tempMarker) {
-                                window.tempMarker.remove();
-                                window.tempMarker = null;
-                            }
-                        })
-                        .catch((error) => {
-                            showError('Error saving: ' + error.message);
-                        });
-                } else {
-                    // Save to local storage
-                    const newPin = {
-                        id: 'local_' + Date.now(),
-                        ...pinData
-                    };
-                    pins.push(newPin);
-                    localStorage.setItem('carolersPins', JSON.stringify(pins));
-                    updateMap();
-                    updatePinCount();
-                    closeAddModal();
-                    showToast('House added successfully!', 'success');
-                    
-                    if (window.tempMarker) {
-                        window.tempMarker.remove();
-                        window.tempMarker = null;
-                    }
-                }
+                const database = firebase.database();
+                database.ref('pins').push(pinData)
+                    .then(() => {
+                        closeAddModal();
+                        
+                        if (window.tempMarker) {
+                            window.tempMarker.remove();
+                            window.tempMarker = null;
+                        }
+                    })
+                    .catch((error) => {
+                        showError('Eroare la salvare: ' + error.message);
+                    });
             } catch (error) {
-                showError('Error saving house: ' + error.message);
+                showError('Eroare la salvare: ' + error.message);
             }
         }
         
@@ -2081,7 +2170,6 @@
             
             if (!navigator.geolocation) {
                 resetGpsButton();
-                showError('Geolocation is not supported by your browser');
                 return;
             }
             
@@ -2089,6 +2177,13 @@
                 function(position) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+                    
+                    if (!isInZone(lat, lng)) {
+                        resetGpsButton();
+                        showError('❌ Locația ta nu este în Cartierul Tineri!\n\nTe rog folosește click pe hartă pentru a selecta o locație în zonă.');
+                        return;
+                    }
                     
                     clickedLocation = { lat, lng };
                     
@@ -2116,7 +2211,7 @@
                 },
                 function(error) {
                     resetGpsButton();
-                    showError('Could not get your location. Please select manually on the map.');
+                    showError('❌ Nu s-a putut obține locația ta.\n\nTe rog folosește click pe hartă pentru a selecta manual o locație.');
                 },
                 {
                     enableHighAccuracy: true,
@@ -2132,13 +2227,6 @@
             gpsBtn.classList.remove('loading');
             gpsBtn.innerHTML = '📍';
         }
-        
-        // Load any existing data on startup
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                document.getElementById('loading').classList.add('hidden');
-            }, 1000);
-        });
     </script>
 </body>
 </html>
