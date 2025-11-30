@@ -394,23 +394,6 @@
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
         }
         
-        .street-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 0.75rem;
-            font-size: 1rem;
-            font-family: inherit;
-            background: #f9fafb;
-        }
-        
-        .street-input:focus {
-            outline: none;
-            border-color: #dc2626;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-        }
-        
         .icon-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -1163,7 +1146,7 @@
         <!-- Overlay for modals -->
         <div id="modal-overlay" class="modal-overlay hidden"></div>
         
-        <!-- Info/Help Modal CORRECTED -->
+        <!-- Info/Help Modal -->
         <div id="info-modal" class="modal modal-info hidden">
             <div class="modal-header">
                 <h3 class="modal-title">
@@ -1478,7 +1461,7 @@
     </div>
 
     <script>
-        // Firebase Configuration
+        // Firebase Configuration 
         const firebaseConfig = {
             apiKey: "AIzaSyBFg-D3v6iYbaqDFs8cZBIsPeKVkByrmM0",
             authDomain: "carollers2025-9f727.firebaseapp.com",
@@ -1491,7 +1474,7 @@
         const ADMIN_PASSWORD = 'carol2025';
         const ICONS = ['🎄', '🎅', '⭐', '🔔', '🎁', '❄️', '🕯️', '🦌', '🧦', '🍪', '🤶', '✨'];
         
-        // Default center coordinates
+        // Default center coordinates - Bucharest
         const DEFAULT_CENTER = [44.47729443095744, 26.074460492097725];
         
         let map;
@@ -1513,10 +1496,7 @@
             initMap();
             initIconGrid();
             setupEventListeners();
-            
-            setTimeout(() => {
-                initFirebase();
-            }, 500);
+            initFirebase(); // Initialize Firebase immediately
         }
         
         function setupEventListeners() {
@@ -1593,7 +1573,7 @@
             setTimeout(() => {
                 map.invalidateSize();
                 document.getElementById('loading').classList.add('hidden');
-            }, 300);
+            }, 500);
             
             window.addEventListener('resize', () => {
                 setTimeout(() => {
@@ -1625,12 +1605,12 @@
         
         function initFirebase() {
             try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
                 
                 const database = firebase.database();
                 
+                // Check connection status
                 const connectedRef = database.ref(".info/connected");
                 connectedRef.on("value", function(snap) {
                     isConnected = snap.val() === true;
@@ -1638,11 +1618,15 @@
                     
                     if (isConnected) {
                         loadPins();
+                    } else {
+                        // If not connected to Firebase, use local storage as fallback
+                        loadFromLocalStorage();
                     }
                 });
                 
             } catch (error) {
-                loadDemoData();
+                console.log('Firebase initialization error, using local storage:', error);
+                loadFromLocalStorage();
             }
         }
         
@@ -1652,7 +1636,7 @@
             if (isConnected) {
                 statusElement.className = 'connection-status connected';
             } else {
-                statusElement.className = 'connection-status disconnected';
+                statusElement.className = 'connection-status';
             }
         }
         
@@ -1665,33 +1649,31 @@
                         snapshot.forEach((child) => {
                             pins.push({ id: child.key, ...child.val() });
                         });
+                        // Save to local storage as backup
+                        localStorage.setItem('carolersPins', JSON.stringify(pins));
                     }
                     updateMap();
                     updatePinCount();
                 }, (error) => {
-                    loadDemoData();
+                    console.log('Firebase error, loading from local storage');
+                    loadFromLocalStorage();
                 });
             } catch (error) {
-                loadDemoData();
+                loadFromLocalStorage();
             }
         }
         
-        function loadDemoData() {
-            pins = [
-                {
-                    id: 'demo1',
-                    name: 'Christmas Family',
-                    address: 'North Pole',
-                    streetNumber: '1',
-                    icon: '🎄',
-                    lat: DEFAULT_CENTER[0],
-                    lng: DEFAULT_CENTER[1],
-                    schedule: 'Dec 25, 00:00-23:59',
-                    notes: 'Ring the bells'
-                }
-            ];
+        function loadFromLocalStorage() {
+            const savedPins = localStorage.getItem('carolersPins');
+            if (savedPins) {
+                pins = JSON.parse(savedPins);
+            } else {
+                pins = [];
+            }
             updateMap();
             updatePinCount();
+            isConnected = false;
+            updateConnectionStatus();
         }
         
         function updateMap() {
@@ -1719,7 +1701,6 @@
                     })
                 }).addTo(map);
                 
-                // Simple tooltip without repetitive instructions
                 let tooltipContent = `
                     <div class="custom-tooltip">
                         <div class="tooltip-family">
@@ -1755,17 +1736,14 @@
                     className: 'custom-tooltip-container'
                 });
                 
-                // Double-click system for deletion
                 marker.on('click', (e) => {
                     const currentTime = new Date().getTime();
                     const timeDiff = currentTime - lastClickTime;
                     
                     if (timeDiff < 300 && timeDiff > 0) {
-                        // Double-click detected - show delete modal
                         clearTimeout(clickTimer);
                         showDeleteModalForPin(pin);
                     } else {
-                        // Single click - mark as visited
                         clickTimer = setTimeout(() => {
                             toggleVisited(pin.id);
                         }, 300);
@@ -1797,6 +1775,7 @@
             const password = document.getElementById('delete-confirm-password').value;
             
             if (!password) {
+                showError('Please enter a password');
                 return;
             }
             
@@ -1804,19 +1783,32 @@
             const isOwner = selectedPin.password && password === selectedPin.password;
             
             if (!isAdminUser && !isOwner) {
-                document.getElementById('delete-confirm-password').value = '';
+                showError('Incorrect password');
                 return;
             }
             
             try {
-                const database = firebase.database();
-                database.ref('pins/' + selectedPin.id).remove()
-                    .then(() => {
-                        closeDeleteConfirmModal();
-                    })
-                    .catch((error) => {
-                    });
+                if (isConnected) {
+                    const database = firebase.database();
+                    database.ref('pins/' + selectedPin.id).remove()
+                        .then(() => {
+                            closeDeleteConfirmModal();
+                            showToast('House deleted successfully', 'success');
+                        })
+                        .catch((error) => {
+                            showError('Error deleting: ' + error.message);
+                        });
+                } else {
+                    // Delete from local storage
+                    pins = pins.filter(pin => pin.id !== selectedPin.id);
+                    localStorage.setItem('carolersPins', JSON.stringify(pins));
+                    updateMap();
+                    updatePinCount();
+                    closeDeleteConfirmModal();
+                    showToast('House deleted successfully', 'success');
+                }
             } catch (error) {
+                showError('Error deleting house');
             }
         }
         
@@ -1861,6 +1853,7 @@
             hideModal('add-modal');
             document.getElementById('add-form').reset();
             document.getElementById('error-message').classList.add('hidden');
+            document.getElementById('location-success').classList.add('hidden');
             clickedLocation = null;
             selectedIcon = '🎄';
             initIconGrid();
@@ -1935,24 +1928,28 @@
                 isAdmin = true;
                 closeAdminLogin();
                 updateMap();
+                showToast('Admin login successful', 'success');
                 
                 if (!document.getElementById('list-modal').classList.contains('hidden')) {
                     showListModal();
                 }
+            } else {
+                showError('Incorrect admin password');
             }
         }
         
         function showListModal() {
             if (pins.length === 0) {
+                const listContainer = document.getElementById('list-container');
+                listContainer.innerHTML = '<div class="empty-list">No houses added yet</div>';
+                showModal('list-modal');
                 return;
             }
             
-            // Sort by address and street number
             const sortedPins = [...pins].sort((a, b) => {
                 const addressCompare = a.address.localeCompare(b.address);
                 if (addressCompare !== 0) return addressCompare;
                 
-                // Extract numbers from streetNumber string for numeric sorting
                 const numA = parseInt(a.streetNumber.replace(/\D/g, '')) || 0;
                 const numB = parseInt(b.streetNumber.replace(/\D/g, '')) || 0;
                 return numA - numB;
@@ -1971,9 +1968,11 @@
                         <div class="checkbox ${isVisited ? 'checked' : ''}" onclick="toggleVisited('${pin.id}')"></div>
                         <span class="checkbox-label" onclick="toggleVisited('${pin.id}')">I caroled here</span>
                     </div>
+                    ${isAdmin ? `
                     <button class="delete-btn" onclick="showDeleteModalForPinFromList('${pin.id}')" style="margin-top: 8px; font-size: 11px; padding: 4px 8px;">
                         🗑️ Delete
                     </button>
+                    ` : ''}
                 `;
                 
                 listItem.innerHTML = `
@@ -2012,23 +2011,13 @@
             const address = document.getElementById('address').value.trim();
             const streetNumber = document.getElementById('streetNumber').value.trim();
             
-            const missingFields = [];
-            if (!name) missingFields.push('Family Name');
-            if (!address) missingFields.push('Street');
-            if (!streetNumber) missingFields.push('House Number');
-            
-            if (missingFields.length > 0) {
-                showError('Please complete the following required fields:\n\n• ' + missingFields.join('\n• '));
+            if (!name || !address || !streetNumber) {
+                showError('Please complete all required fields:\n\n• Family Name\n• Street\n• House Number');
                 return;
             }
             
             if (!clickedLocation) {
-                showError('Please select a location on the map or use GPS!');
-                return;
-            }
-            
-            if (!isConnected) {
-                showError('You are not connected to the internet. Please check your connection and try again.');
+                showError('Please select a location on the map!');
                 return;
             }
             
@@ -2046,21 +2035,41 @@
             };
             
             try {
-                const database = firebase.database();
-                database.ref('pins').push(pinData)
-                    .then(() => {
-                        closeAddModal();
-                        
-                        if (window.tempMarker) {
-                            window.tempMarker.remove();
-                            window.tempMarker = null;
-                        }
-                    })
-                    .catch((error) => {
-                        showError('Save error: ' + error.message);
-                    });
+                if (isConnected) {
+                    const database = firebase.database();
+                    database.ref('pins').push(pinData)
+                        .then(() => {
+                            closeAddModal();
+                            showToast('House added successfully!', 'success');
+                            
+                            if (window.tempMarker) {
+                                window.tempMarker.remove();
+                                window.tempMarker = null;
+                            }
+                        })
+                        .catch((error) => {
+                            showError('Error saving: ' + error.message);
+                        });
+                } else {
+                    // Save to local storage
+                    const newPin = {
+                        id: 'local_' + Date.now(),
+                        ...pinData
+                    };
+                    pins.push(newPin);
+                    localStorage.setItem('carolersPins', JSON.stringify(pins));
+                    updateMap();
+                    updatePinCount();
+                    closeAddModal();
+                    showToast('House added successfully!', 'success');
+                    
+                    if (window.tempMarker) {
+                        window.tempMarker.remove();
+                        window.tempMarker = null;
+                    }
+                }
             } catch (error) {
-                showError('Save error: ' + error.message);
+                showError('Error saving house: ' + error.message);
             }
         }
         
@@ -2072,6 +2081,7 @@
             
             if (!navigator.geolocation) {
                 resetGpsButton();
+                showError('Geolocation is not supported by your browser');
                 return;
             }
             
@@ -2079,7 +2089,6 @@
                 function(position) {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
-                    const accuracy = position.coords.accuracy;
                     
                     clickedLocation = { lat, lng };
                     
@@ -2107,7 +2116,7 @@
                 },
                 function(error) {
                     resetGpsButton();
-                    showError('❌ Could not get your location.\n\nPlease use click on the map to manually select a location.');
+                    showError('Could not get your location. Please select manually on the map.');
                 },
                 {
                     enableHighAccuracy: true,
@@ -2123,6 +2132,13 @@
             gpsBtn.classList.remove('loading');
             gpsBtn.innerHTML = '📍';
         }
+        
+        // Load any existing data on startup
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+            }, 1000);
+        });
     </script>
 </body>
 </html>
