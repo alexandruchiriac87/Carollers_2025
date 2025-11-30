@@ -1299,27 +1299,27 @@
                 
                 <div class="form-group">
                     <label class="form-label">👤 Family Name *</label>
-                    <input type="text" class="form-input" id="name" placeholder="Family name" maxlength="50" required>
+                    <input type="text" class="form-input" id="name" placeholder="Santa" maxlength="50" required>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">🏠 Street *</label>
-                    <input type="text" class="form-input" id="address" placeholder="Street name" maxlength="100" required>
+                    <input type="text" class="form-input" id="address" placeholder="North Pole" maxlength="100" required>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">House Number *</label>
-                    <input type="text" class="form-input" id="streetNumber" placeholder="House number" maxlength="10" required>
+                    <input type="text" class="form-input" id="streetNumber" placeholder="1" maxlength="10" required>
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">🕐 Preferred schedule</label>
-                    <input type="text" class="form-input" id="schedule" placeholder="Ex: Dec 24, 18:00-21:00" maxlength="50">
+                    <input type="text" class="form-input" id="schedule" placeholder="25 Dec, 00:00-23:59" maxlength="50">
                 </div>
                 
                 <div class="form-group">
                     <label class="form-label">Additional details</label>
-                    <textarea class="form-textarea" id="notes" rows="3" placeholder="Ex: Ring the bell, green door" maxlength="200"></textarea>
+                    <textarea class="form-textarea" id="notes" rows="3" placeholder="Ex: Ring the bell" maxlength="200"></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -1437,16 +1437,14 @@
     <script>
         // Firebase Configuration
         const firebaseConfig = {
-              apiKey: "AIzaSyCAdZt9NRWSYW54yCbtWYwcNraKmi9hmTk",
-              authDomain: "colindatorictb2025.firebaseapp.com",
-              databaseURL: "https://colindatorictb2025-default-rtdb.europe-west1.firebasedatabase.app",
-              projectId: "colindatorictb2025",
-              storageBucket: "colindatorictb2025.firebasestorage.app",
-              messagingSenderId: "375155665612",
-              appId: "1:375155665612:web:5f7a0fb504570c3269f069"
-            
-            };
-
+            apiKey: "AIzaSyBFg-D3v6iYbaqDFs8cZBIsPeKVkByrmM0",
+            authDomain: "carollers2025-9f727.firebaseapp.com",
+            databaseURL: "https://carollers2025-9f727-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "carollers2025-9f727",
+            storageBucket: "carollers2025-9f727.firebasestorage.app",
+            messagingSenderId: "611918656458",
+            appId: "1:611918656458:web:c3688cfbc6813cd8c21533"
+        };
 
         const ADMIN_PASSWORD = 'carol2025';
         const ICONS = ['🎄', '🎅', '⭐', '🔔', '🎁', '❄️', '🕯️', '🦌', '🧦', '🍪', '🤶', '✨'];
@@ -1612,9 +1610,6 @@
                         
                         if (isConnected) {
                             loadPinsFromFirebase();
-                            showToast('Connected to server', 'success');
-                        } else {
-                            showToast('Working offline - using local data', 'error');
                         }
                     }
                 });
@@ -1624,7 +1619,6 @@
                 isConnected = false;
                 updateConnectionStatus();
                 loadFromLocalStorage();
-                showToast('Firebase error - using local storage', 'error');
             }
         }
         
@@ -1633,10 +1627,8 @@
             
             if (isConnected) {
                 statusElement.classList.add('connected');
-                console.log("Bradul ar trebui să fie luminat acum!");
             } else {
                 statusElement.classList.remove('connected');
-                console.log("Bradul NU este luminat - offline");
             }
         }
         
@@ -1803,7 +1795,6 @@
                     database.ref('pins/' + selectedPin.id).remove()
                         .then(() => {
                             closeDeleteConfirmModal();
-                            showToast('House deleted successfully', 'success');
                         })
                         .catch((error) => {
                             showError('Error deleting from server: ' + error.message);
@@ -1815,7 +1806,6 @@
                     updateMap();
                     updatePinCount();
                     closeDeleteConfirmModal();
-                    showToast('House deleted from local storage', 'success');
                 }
             } catch (error) {
                 showError('Error deleting house: ' + error.message);
@@ -1837,18 +1827,6 @@
         
         function closeError() {
             document.getElementById('error-message').classList.add('hidden');
-        }
-        
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
         }
         
         function openAddModal() {
@@ -1938,7 +1916,6 @@
                 isAdmin = true;
                 closeAdminLogin();
                 updateMap();
-                showToast('Admin login successful', 'success');
                 
                 if (!document.getElementById('list-modal').classList.contains('hidden')) {
                     showListModal();
@@ -2051,7 +2028,6 @@
                         .then((result) => {
                             console.log("Saved to Firebase with key:", result.key);
                             closeAddModal();
-                            showToast('House added successfully to server!', 'success');
                             
                             if (window.tempMarker) {
                                 window.tempMarker.remove();
@@ -2073,7 +2049,6 @@
                     updateMap();
                     updatePinCount();
                     closeAddModal();
-                    showToast('House added to local storage!', 'success');
                     
                     if (window.tempMarker) {
                         window.tempMarker.remove();
