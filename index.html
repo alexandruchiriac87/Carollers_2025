@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     
+    <!-- ÎNCĂRCĂ CONFIGURAȚIA -->
+    <script src="config.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -1003,6 +1006,48 @@
             line-height: 1.4;
         }
         
+        /* STILURI PENTRU SELECTORI DE PROGRAM */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+        
+        .schedule-date {
+            grid-column: 1 / -1;
+        }
+        
+        .time-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #f9fafb;
+            text-align: center;
+        }
+        
+        .time-separator {
+            text-align: center;
+            font-weight: bold;
+            color: #6b7280;
+            padding: 0 0.5rem;
+        }
+        
+        .schedule-display {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #0369a1;
+            text-align: center;
+        }
+        
         /* On mobile, positioning adjustments */
         @media (max-width: 767px) {
             .connection-status {
@@ -1056,6 +1101,15 @@
             #pin-count, #info-btn {
                 font-size: 0.75rem;
                 padding: 0.3rem 0.6rem;
+            }
+            
+            .schedule-grid {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+            }
+            
+            .time-separator {
+                display: none;
             }
         }
         
@@ -1314,7 +1368,33 @@
                 
                 <div class="form-group">
                     <label class="form-label">🕐 Preferred schedule</label>
-                    <input type="text" class="form-input" id="schedule" placeholder="25 Dec, 00:00-23:59" maxlength="50">
+                    
+                    <!-- DATA SELECTOR -->
+                    <div class="schedule-date">
+                        <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Select date:</label>
+                        <input type="date" class="form-input" id="schedule-date">
+                    </div>
+                    
+                    <!-- TIME SELECTOR -->
+                    <div class="schedule-grid">
+                        <div>
+                            <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Start time:</label>
+                            <input type="time" class="time-input" id="start-time">
+                        </div>
+                        <div class="time-separator">-</div>
+                        <div>
+                            <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">End time:</label>
+                            <input type="time" class="time-input" id="end-time">
+                        </div>
+                    </div>
+                    
+                    <!-- SCHEDULE DISPLAY -->
+                    <div id="schedule-display" class="schedule-display hidden">
+                        <strong>Selected schedule:</strong>
+                        <span id="schedule-text"></span>
+                    </div>
+                    
+                    <p class="hint-text">💡 Select date and time when you prefer carolers to visit</p>
                 </div>
                 
                 <div class="form-group">
@@ -1435,18 +1515,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBFg-D3v6iYbaqDFs8cZBIsPeKVkByrmM0",
-            authDomain: "carollers2025-9f727.firebaseapp.com",
-            databaseURL: "https://carollers2025-9f727-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "carollers2025-9f727",
-            storageBucket: "carollers2025-9f727.firebasestorage.app",
-            messagingSenderId: "611918656458",
-            appId: "1:611918656458:web:c3688cfbc6813cd8c21533"
-        };
-
-        const ADMIN_PASSWORD = 'carol2025';
+        // CONFIGURAȚIE DIN FIȘIER EXTERN
+        const ADMIN_PASSWORD = window.APP_CONFIG.ADMIN_PASSWORD;
+        const FIREBASE_CONFIG = window.APP_CONFIG.FIREBASE_CONFIG;
         const ICONS = ['🎄', '🎅', '⭐', '🔔', '🎁', '❄️', '🕯️', '🦌', '🧦', '🍪', '🤶', '✨'];
         
         // Default center coordinates - Bucharest
@@ -1472,6 +1543,110 @@
             initIconGrid();
             setupEventListeners();
             initFirebase();
+            initScheduleListeners();
+        }
+        
+        function initScheduleListeners() {
+            // Ascultăm pentru schimbări în selectorii de oră și dată
+            const dateInput = document.getElementById('schedule-date');
+            const startTimeInput = document.getElementById('start-time');
+            const endTimeInput = document.getElementById('end-time');
+            
+            [dateInput, startTimeInput, endTimeInput].forEach(input => {
+                input.addEventListener('change', updateScheduleDisplay);
+            });
+            
+            // Setează data minimă ca ziua de azi
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.min = today;
+        }
+        
+        function updateScheduleDisplay() {
+            const date = document.getElementById('schedule-date').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            const display = document.getElementById('schedule-display');
+            const scheduleText = document.getElementById('schedule-text');
+            
+            let scheduleString = '';
+            
+            if (date) {
+                // Formatăm data în mod frumos (ex: "25 Dec")
+                const dateObj = new Date(date + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short'
+                });
+                scheduleString += formattedDate;
+                
+                if (startTime && endTime) {
+                    // Formatăm orele (eliminăm secundele dacă există)
+                    const formattedStart = startTime.substring(0, 5);
+                    const formattedEnd = endTime.substring(0, 5);
+                    scheduleString += `, ${formattedStart}-${formattedEnd}`;
+                } else if (startTime) {
+                    const formattedStart = startTime.substring(0, 5);
+                    scheduleString += `, from ${formattedStart}`;
+                } else if (endTime) {
+                    const formattedEnd = endTime.substring(0, 5);
+                    scheduleString += `, until ${formattedEnd}`;
+                }
+            }
+            
+            if (scheduleString) {
+                scheduleText.textContent = scheduleString;
+                display.classList.remove('hidden');
+            } else {
+                display.classList.add('hidden');
+            }
+        }
+        
+        function getScheduleValue() {
+            const date = document.getElementById('schedule-date').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            if (!date && !startTime && !endTime) {
+                return ''; // Niciun interval selectat
+            }
+            
+            let scheduleString = '';
+            
+            if (date) {
+                const dateObj = new Date(date + 'T00:00:00');
+                const formattedDate = dateObj.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short'
+                });
+                scheduleString += formattedDate;
+            }
+            
+            if (startTime && endTime) {
+                const formattedStart = startTime.substring(0, 5);
+                const formattedEnd = endTime.substring(0, 5);
+                if (scheduleString) {
+                    scheduleString += `, ${formattedStart}-${formattedEnd}`;
+                } else {
+                    scheduleString = `${formattedStart}-${formattedEnd}`;
+                }
+            } else if (startTime) {
+                const formattedStart = startTime.substring(0, 5);
+                if (scheduleString) {
+                    scheduleString += `, from ${formattedStart}`;
+                } else {
+                    scheduleString = `From ${formattedStart}`;
+                }
+            } else if (endTime) {
+                const formattedEnd = endTime.substring(0, 5);
+                if (scheduleString) {
+                    scheduleString += `, until ${formattedEnd}`;
+                } else {
+                    scheduleString = `Until ${formattedEnd}`;
+                }
+            }
+            
+            return scheduleString;
         }
         
         function setupEventListeners() {
@@ -1484,103 +1659,9 @@
             document.getElementById('modal-overlay').addEventListener('click', closeAllModals);
         }
         
-        function showInfoModal() {
-            showModal('info-modal');
-        }
-        
-        function closeInfoModal() {
-            hideModal('info-modal');
-        }
-        
-        function shareOnWhatsApp() {
-            const text = '🎄 Welcome Carolers! 🎅\n\nMap of houses that welcome carolers.\nAdd your house too: ' + window.location.href;
-            
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Carolers Map',
-                    text: text
-                });
-            } else {
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-                window.open(whatsappUrl, '_blank');
-            }
-        }
-        
-        function centerToDefault() {
-            map.setView(DEFAULT_CENTER, 15);
-        }
-        
-        function initMap() {
-            map = L.map('map');
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
-            }).addTo(map);
-            
-            // Set initial view to default coordinates
-            map.setView(DEFAULT_CENTER, 15);
-            
-            map.on('click', (e) => {
-                const lat = e.latlng.lat;
-                const lng = e.latlng.lng;
-                
-                clickedLocation = { lat, lng };
-                
-                if (window.tempMarker) {
-                    window.tempMarker.remove();
-                }
-                
-                window.tempMarker = L.marker([lat, lng], {
-                    icon: L.divIcon({
-                        html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));">📍</div>',
-                        className: 'temp-marker',
-                        iconSize: [48, 48],
-                        iconAnchor: [24, 48]
-                    })
-                }).addTo(map);
-                
-                if (!document.getElementById('add-modal').classList.contains('hidden')) {
-                    document.getElementById('location-success').classList.remove('hidden');
-                }
-            });
-            
-            setTimeout(() => {
-                map.invalidateSize();
-                document.getElementById('loading').classList.add('hidden');
-            }, 500);
-            
-            window.addEventListener('resize', () => {
-                setTimeout(() => {
-                    map.invalidateSize();
-                }, 100);
-            });
-        }
-        
-        function initIconGrid() {
-            const grid = document.getElementById('icon-grid');
-            grid.innerHTML = '';
-            ICONS.forEach(icon => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'icon-btn';
-                btn.textContent = icon;
-                btn.onclick = () => selectIcon(icon);
-                if (icon === selectedIcon) btn.classList.add('selected');
-                grid.appendChild(btn);
-            });
-        }
-        
-        function selectIcon(icon) {
-            selectedIcon = icon;
-            document.querySelectorAll('.icon-btn').forEach(btn => {
-                btn.classList.toggle('selected', btn.textContent === icon);
-            });
-        }
-        
         function initFirebase() {
             try {
-                // Initialize Firebase only once
+                // Initialize Firebase cu configurația din fișier extern
                 if (typeof firebase === 'undefined') {
                     console.error('Firebase SDK not loaded');
                     isConnected = false;
@@ -1590,7 +1671,7 @@
                 }
 
                 if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
+                    firebase.initializeApp(FIREBASE_CONFIG);
                     console.log('Firebase initialized successfully');
                 } else {
                     console.log('Firebase already initialized');
@@ -1842,6 +1923,7 @@
             document.getElementById('add-form').reset();
             document.getElementById('error-message').classList.add('hidden');
             document.getElementById('location-success').classList.add('hidden');
+            document.getElementById('schedule-display').classList.add('hidden');
             clickedLocation = null;
             selectedIcon = '🎄';
             initIconGrid();
@@ -1925,7 +2007,7 @@
             }
         }
         
-           function showListModal() {
+        function showListModal() {
             if (pins.length === 0) {
                 const listContainer = document.getElementById('list-container');
                 listContainer.innerHTML = '<div class="empty-list">No houses added yet</div>';
@@ -2006,11 +2088,22 @@
                 return;
             }
             
+            // Validare ore
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            
+            if (startTime && endTime) {
+                if (startTime >= endTime) {
+                    showError('End time must be after start time!');
+                    return;
+                }
+            }
+            
             const pinData = {
                 name,
                 address,
                 streetNumber,
-                schedule: document.getElementById('schedule').value,
+                schedule: getScheduleValue(), // Folosim noua funcție
                 notes: document.getElementById('notes').value,
                 icon: selectedIcon,
                 password: document.getElementById('password').value,
@@ -2057,6 +2150,74 @@
                 console.error("Save error:", error);
                 showError('Error saving house: ' + error.message);
             }
+        }
+        
+        function initMap() {
+            map = L.map('map');
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Set initial view to default coordinates
+            map.setView(DEFAULT_CENTER, 15);
+            
+            map.on('click', (e) => {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                
+                clickedLocation = { lat, lng };
+                
+                if (window.tempMarker) {
+                    window.tempMarker.remove();
+                }
+                
+                window.tempMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));">📍</div>',
+                        className: 'temp-marker',
+                        iconSize: [48, 48],
+                        iconAnchor: [24, 48]
+                    })
+                }).addTo(map);
+                
+                if (!document.getElementById('add-modal').classList.contains('hidden')) {
+                    document.getElementById('location-success').classList.remove('hidden');
+                }
+            });
+            
+            setTimeout(() => {
+                map.invalidateSize();
+                document.getElementById('loading').classList.add('hidden');
+            }, 500);
+            
+            window.addEventListener('resize', () => {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            });
+        }
+        
+        function initIconGrid() {
+            const grid = document.getElementById('icon-grid');
+            grid.innerHTML = '';
+            ICONS.forEach(icon => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'icon-btn';
+                btn.textContent = icon;
+                btn.onclick = () => selectIcon(icon);
+                if (icon === selectedIcon) btn.classList.add('selected');
+                grid.appendChild(btn);
+            });
+        }
+        
+        function selectIcon(icon) {
+            selectedIcon = icon;
+            document.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.textContent === icon);
+            });
         }
         
         function getUserLocation() {
@@ -2117,6 +2278,32 @@
             gpsBtn.disabled = false;
             gpsBtn.classList.remove('loading');
             gpsBtn.innerHTML = '📍';
+        }
+        
+        function centerToDefault() {
+            map.setView(DEFAULT_CENTER, 15);
+        }
+        
+        function shareOnWhatsApp() {
+            const text = '🎄 Welcome Carolers! 🎅\n\nMap of houses that welcome carolers.\nAdd your house too: ' + window.location.href;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Carolers Map',
+                    text: text
+                });
+            } else {
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                window.open(whatsappUrl, '_blank');
+            }
+        }
+        
+        function showInfoModal() {
+            showModal('info-modal');
+        }
+        
+        function closeInfoModal() {
+            hideModal('info-modal');
         }
     </script>
 </body>
