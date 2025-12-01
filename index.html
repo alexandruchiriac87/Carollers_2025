@@ -118,28 +118,6 @@
             transform: scale(1.05);
         }
         
-        /* Visitor Admin Button */
-        #admin-visitors-btn {
-            background: rgba(255,255,255,0.2);
-            padding: 0.4rem 0.8rem;
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-        
-        #admin-visitors-btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: scale(1.05);
-        }
-        
         #main-container {
             flex: 1;
             display: flex;
@@ -1105,8 +1083,8 @@
         .snowflake {
             position: absolute;
             top: -10px;
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background: white;
             border-radius: 50%;
             pointer-events: none;
@@ -1158,6 +1136,33 @@
         #music-btn.music-playing {
             background: #10b981;
             animation: pulse 2s infinite;
+        }
+
+        /* STILURI PENTRU BUTON FULGI */
+        #snow-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        #snow-btn:hover {
+            transform: scale(1.1);
+            background: #0284c7;
+        }
+
+        #snow-btn.snow-off {
+            background: #94a3b8;
+            opacity: 0.7;
         }
 
         @keyframes pulse {
@@ -1309,7 +1314,7 @@
                 font-size: 0.65rem;
             }
             
-            #info-btn, #admin-visitors-btn {
+            #info-btn {
                 font-size: 0.75rem;
                 padding: 0.3rem 0.6rem;
             }
@@ -1377,9 +1382,6 @@
                 </div>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button id="admin-visitors-btn" title="Visitor statistics">
-                    👑
-                </button>
                 <button id="info-btn" title="Usage instructions">
                     ❓ Info
                 </button>
@@ -1405,8 +1407,11 @@
             <span id="visitor-count">0</span>
         </div>
 
-        <!-- Buton muzică -->
+        <!-- Buton muzică și fulgi -->
         <div id="music-controls">
+            <button id="snow-btn" title="Toggle snow animation">
+                ❄️
+            </button>
             <button id="music-btn" title="Toggle Christmas music">
                 🔇
             </button>
@@ -1555,17 +1560,17 @@
                             </div>
                         </li>
                         <li class="info-step">
-                            <div class="step-icon">👑</div>
-                            <div class="step-content">
-                                <div class="step-title">Visitor stats</div>
-                                <div class="step-description">The 👑 button shows visitor statistics (admin only)</div>
-                            </div>
-                        </li>
-                        <li class="info-step">
                             <div class="step-icon">🔊</div>
                             <div class="step-content">
                                 <div class="step-title">Christmas music</div>
                                 <div class="step-description">The 🔊 button toggles background Christmas music</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">❄️</div>
+                            <div class="step-content">
+                                <div class="step-title">Snow animation</div>
+                                <div class="step-description">The ❄️ button toggles snow falling animation</div>
                             </div>
                         </li>
                     </ol>
@@ -1790,20 +1795,33 @@
             </div>
         </div>
 
-        <!-- Visitor Admin Panel -->
-        <div id="admin-panel">
-            <h2><span>👑</span> Admin Panel - Visitor Log</h2>
-            <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
-                Total unique visitors: <strong id="total-visitors">0</strong>
-            </p>
-            <ul id="visitor-list">
-                <!-- Lista vizitatori va fi populată aici -->
-            </ul>
-            <button class="close-admin-btn" onclick="closeAdminPanel()">Close Panel</button>
+        <!-- Visitor Admin Panel (accesat prin Admin Login din lista) -->
+        <div id="admin-panel" class="modal modal-view hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">👑</span>
+                    Visitor Statistics
+                </h3>
+                <button class="close-btn" onclick="closeAdminPanel()">×</button>
+            </div>
+            
+            <div class="form-group">
+                <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
+                    Total unique visitors: <strong id="total-visitors">0</strong>
+                </p>
+                <div id="visitor-list-container">
+                    <ul id="visitor-list">
+                        <!-- Lista vizitatori va fi populată aici -->
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="closeAdminPanel()" class="btn btn-secondary" style="flex: 1;">
+                    Close
+                </button>
+            </div>
         </div>
-        
-        <!-- Overlay pentru panoul admin -->
-        <div id="admin-panel-overlay" class="modal-overlay hidden"></div>
         
         <div id="loading">
             <div style="text-align: center;">
@@ -1817,6 +1835,7 @@
     <audio id="bg-music" loop preload="metadata">
         <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
         <source src="https://assets.mixkit.co/music/preview/mixkit-christmas-jingle-226.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
     </audio>
 
     <!-- Firebase Scripts -->
@@ -1844,6 +1863,9 @@
         let visitedHouses = JSON.parse(localStorage.getItem('visitedHouses') || '{}');
         let lastClickTime = 0;
         let clickTimer = null;
+        let snowInterval = null;
+        let snowEnabled = true;
+        let visitorId = null;
         
         document.addEventListener('DOMContentLoaded', init);
         
@@ -1865,23 +1887,26 @@
             // Inițializează controlul muzicii
             initMusicControls();
             
-            // Adaugă event listener pentru butonul admin vizitatori
-            document.getElementById('admin-visitors-btn').addEventListener('click', showAdminPanel);
+            // Inițializează butonul de fulgi
+            initSnowButton();
             
-            // Adaugă event listener pentru overlay-ul admin panel
-            document.getElementById('admin-panel-overlay').addEventListener('click', closeAdminPanel);
+            // Adaugă butonul admin în lista de case
+            setupAdminInList();
         }
         
         function initSnowflakes() {
             const snowContainer = document.getElementById('snow');
+            snowEnabled = localStorage.getItem('carolers_snow') !== 'false';
             
             function createSnowflake() {
+                if (!snowEnabled) return;
+                
                 const snowflake = document.createElement('div');
                 snowflake.classList.add('snowflake');
                 snowflake.style.left = Math.random() * 100 + 'vw';
                 snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
                 snowflake.style.opacity = Math.random() * 0.7 + 0.3;
-                snowflake.style.width = Math.random() * 6 + 4 + 'px';
+                snowflake.style.width = Math.random() * 8 + 4 + 'px';
                 snowflake.style.height = snowflake.style.width;
                 
                 // Adaugă variație în culoare (albastru deschis pentru unii fulgi)
@@ -1900,12 +1925,57 @@
             }
             
             // Creează fulgi la interval
-            setInterval(createSnowflake, 200);
+            if (snowInterval) clearInterval(snowInterval);
+            snowInterval = setInterval(createSnowflake, 150);
             
             // Creează fulgi inițiali
-            for (let i = 0; i < 20; i++) {
-                setTimeout(() => createSnowflake(), Math.random() * 1000);
+            if (snowEnabled) {
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => createSnowflake(), Math.random() * 1000);
+                }
             }
+        }
+        
+        function initSnowButton() {
+            const snowBtn = document.getElementById('snow-btn');
+            
+            // Verifică starea salvată
+            snowEnabled = localStorage.getItem('carolers_snow') !== 'false';
+            
+            if (snowEnabled) {
+                snowBtn.textContent = '❄️';
+                snowBtn.classList.remove('snow-off');
+                snowBtn.title = 'Turn off snow animation';
+            } else {
+                snowBtn.textContent = '❄️';
+                snowBtn.classList.add('snow-off');
+                snowBtn.title = 'Turn on snow animation';
+                // Șterge fulgii existenți
+                document.getElementById('snow').innerHTML = '';
+            }
+            
+            snowBtn.addEventListener('click', () => {
+                snowEnabled = !snowEnabled;
+                
+                if (snowEnabled) {
+                    snowBtn.textContent = '❄️';
+                    snowBtn.classList.remove('snow-off');
+                    snowBtn.title = 'Turn off snow animation';
+                    localStorage.setItem('carolers_snow', 'true');
+                    // Repornește animația
+                    initSnowflakes();
+                    showToast("Snow animation enabled! ❄️", "success");
+                } else {
+                    snowBtn.textContent = '❄️';
+                    snowBtn.classList.add('snow-off');
+                    snowBtn.title = 'Turn on snow animation';
+                    localStorage.setItem('carolers_snow', 'false');
+                    // Oprește animația și șterge fulgii
+                    if (snowInterval) clearInterval(snowInterval);
+                    document.getElementById('snow').innerHTML = '';
+                    showToast("Snow animation disabled", "info");
+                }
+            });
         }
         
         function initMusicControls() {
@@ -1916,11 +1986,21 @@
             const isMusicOn = localStorage.getItem('carolers_music') === 'true';
             
             if (isMusicOn) {
-                bgMusic.volume = 0.5; // Setează volumul la 50%
-                bgMusic.play().catch(e => console.log("Autoplay blocked:", e));
+                bgMusic.volume = 0.3; // Setează volumul la 30% (mai scăzut)
                 musicBtn.textContent = '🔊';
                 musicBtn.classList.add('music-playing');
                 musicBtn.title = 'Turn off Christmas music';
+                
+                // Încearcă să pornească muzica (cu delay pentru autoplay policies)
+                setTimeout(() => {
+                    bgMusic.play().catch(e => {
+                        console.log("Autoplay blocked:", e);
+                        // Dacă autoplay e blocat, schimbă butonul
+                        musicBtn.textContent = '▶️';
+                        musicBtn.classList.remove('music-playing');
+                        musicBtn.title = 'Click to play music (browser blocked autoplay)';
+                    });
+                }, 1000);
             } else {
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.remove('music-playing');
@@ -1929,7 +2009,7 @@
             
             musicBtn.addEventListener('click', () => {
                 if (bgMusic.paused) {
-                    bgMusic.volume = 0.5;
+                    bgMusic.volume = 0.3;
                     bgMusic.play().then(() => {
                         musicBtn.textContent = '🔊';
                         musicBtn.classList.add('music-playing');
@@ -1938,7 +2018,10 @@
                         showToast("Christmas music started! 🎶", "success");
                     }).catch(e => {
                         console.log("Play failed:", e);
-                        showToast("Click to play music manually", "info");
+                        showToast("Click play button in browser controls", "info");
+                        // Schimbă butonul pentru a indica că trebuie interacțiune manuală
+                        musicBtn.textContent = '▶️';
+                        musicBtn.title = 'Click to play (requires user interaction)';
                     });
                 } else {
                     bgMusic.pause();
@@ -1951,121 +2034,170 @@
             });
             
             // Încearcă auto-play cu interacțiunea utilizatorului
-            document.addEventListener('click', function initMusicOnFirstClick() {
-                if (bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
-                    bgMusic.play().catch(e => console.log("Autoplay on click failed:", e));
+            let userInteracted = false;
+            
+            const tryPlayOnInteraction = () => {
+                if (!userInteracted && bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
+                    bgMusic.play().then(() => {
+                        musicBtn.textContent = '🔊';
+                        musicBtn.classList.add('music-playing');
+                    }).catch(e => console.log("Play on interaction failed:", e));
                 }
-                document.removeEventListener('click', initMusicOnFirstClick);
+                userInteracted = true;
+            };
+            
+            // Adaugă event listeners pentru interacțiunea utilizatorului
+            ['click', 'touchstart', 'keydown'].forEach(event => {
+                document.addEventListener(event, tryPlayOnInteraction, { once: true });
             });
         }
         
         async function initVisitorCounter() {
             try {
-                // Încarcă contorul din localStorage ca fallback
-                let visitorCount = localStorage.getItem('carolers_visitor_count') || '0';
-                
-                if (isConnected) {
-                    // Dacă suntem conectați la Firebase, folosim Firebase
-                    const database = firebase.database();
-                    const visitorRef = database.ref('visitors');
-                    
-                    // Adaugă vizitator curent
-                    const visitorData = {
-                        timestamp: Date.now(),
-                        userAgent: navigator.userAgent.substring(0, 100),
-                        date: new Date().toISOString()
-                    };
-                    
-                    await visitorRef.push(visitorData);
-                    
-                    // Numără toți vizitorii
-                    const snapshot = await visitorRef.once('value');
-                    visitorCount = snapshot.numChildren().toString();
-                    
-                    // Salvează în localStorage pentru backup
-                    localStorage.setItem('carolers_visitor_count', visitorCount);
-                } else {
-                    // Fallback la localStorage
-                    let count = parseInt(visitorCount) + 1;
-                    localStorage.setItem('carolers_visitor_count', count.toString());
-                    visitorCount = count.toString();
+                // Generează un ID unic pentru această sesiune/visitor
+                visitorId = localStorage.getItem('carolers_visitor_id');
+                if (!visitorId) {
+                    visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('carolers_visitor_id', visitorId);
                 }
                 
-                // Actualizează afișajul
-                document.getElementById('visitor-count').textContent = visitorCount;
+                // Adaugă timestamp-ul curent pentru această vizită
+                const visitKey = 'visit_' + Date.now();
+                localStorage.setItem(visitKey, Date.now());
+                
+                if (isConnected) {
+                    const database = firebase.database();
+                    const visitorRef = database.ref('visitors/' + visitorId);
+                    
+                    // Verifică dacă visitor-ul există deja
+                    const snapshot = await visitorRef.once('value');
+                    
+                    if (!snapshot.exists()) {
+                        // Visitor nou - adaugă înregistrare
+                        const visitorData = {
+                            id: visitorId,
+                            firstVisit: Date.now(),
+                            lastVisit: Date.now(),
+                            visits: 1,
+                            userAgent: navigator.userAgent.substring(0, 150),
+                            timestamp: Date.now()
+                        };
+                        
+                        await visitorRef.set(visitorData);
+                        console.log("New visitor added to Firebase");
+                    } else {
+                        // Visitor existent - actualizează
+                        const existingData = snapshot.val();
+                        const visitorData = {
+                            ...existingData,
+                            lastVisit: Date.now(),
+                            visits: (existingData.visits || 1) + 1,
+                            timestamp: Date.now()
+                        };
+                        
+                        await visitorRef.update(visitorData);
+                        console.log("Existing visitor updated in Firebase");
+                    }
+                    
+                    // Obține numărul total de vizitatori unici
+                    const allVisitorsRef = database.ref('visitors');
+                    const allVisitorsSnapshot = await allVisitorsRef.once('value');
+                    const totalVisitors = allVisitorsSnapshot.numChildren();
+                    
+                    // Actualizează contorul vizual
+                    document.getElementById('visitor-count').textContent = totalVisitors;
+                    console.log("Total unique visitors:", totalVisitors);
+                    
+                } else {
+                    // Mod offline - folosește localStorage
+                    let totalVisitors = parseInt(localStorage.getItem('carolers_total_visitors') || '0');
+                    
+                    // Verifică dacă este prima vizită pentru acest visitor
+                    const visitorKey = 'visitor_' + visitorId;
+                    if (!localStorage.getItem(visitorKey)) {
+                        totalVisitors++;
+                        localStorage.setItem('carolers_total_visitors', totalVisitors.toString());
+                        localStorage.setItem(visitorKey, 'visited');
+                    }
+                    
+                    document.getElementById('visitor-count').textContent = totalVisitors;
+                    console.log("Offline visitor count:", totalVisitors);
+                }
                 
             } catch (error) {
                 console.error('Error initializing visitor counter:', error);
-                // Fallback la localStorage
-                let count = parseInt(localStorage.getItem('carolers_visitor_count') || '0') + 1;
-                localStorage.setItem('carolers_visitor_count', count.toString());
-                document.getElementById('visitor-count').textContent = count.toString();
+                // Fallback simplu
+                const fallbackCount = localStorage.getItem('carolers_visitor_count') || '1';
+                document.getElementById('visitor-count').textContent = fallbackCount;
             }
         }
         
+        function setupAdminInList() {
+            // Panoul admin pentru vizitatori este acum în modalul de admin login
+            // Se accesează prin butonul "Admin Login" din lista de case
+        }
+        
         async function showAdminPanel() {
-            const password = prompt("Enter admin password:");
-            
-            if (password === ADMIN_PASSWORD) {
-                try {
-                    const visitorList = document.getElementById('visitor-list');
-                    const totalVisitors = document.getElementById('total-visitors');
+            // Această funcție este apelată când admin-ul se loghează cu succes
+            try {
+                const totalVisitors = document.getElementById('total-visitors');
+                const visitorList = document.getElementById('visitor-list');
+                
+                if (isConnected) {
+                    const database = firebase.database();
+                    const visitorsRef = database.ref('visitors');
+                    const snapshot = await visitorsRef.once('value');
                     
-                    if (isConnected) {
-                        const database = firebase.database();
-                        const visitorRef = database.ref('visitors');
-                        const snapshot = await visitorRef.once('value');
-                        
-                        const visitors = [];
-                        snapshot.forEach((child) => {
-                            visitors.push({
-                                id: child.key,
-                                ...child.val()
-                            });
+                    const visitors = [];
+                    snapshot.forEach((child) => {
+                        visitors.push({
+                            id: child.key,
+                            ...child.val()
                         });
+                    });
+                    
+                    // Sortează după ultima vizită (cele mai recente primele)
+                    visitors.sort((a, b) => b.lastVisit - a.lastVisit);
+                    
+                    totalVisitors.textContent = visitors.length;
+                    visitorList.innerHTML = '';
+                    
+                    visitors.forEach(visitor => {
+                        const li = document.createElement('li');
+                        const firstDate = new Date(visitor.firstVisit);
+                        const lastDate = new Date(visitor.lastVisit);
+                        const visits = visitor.visits || 1;
                         
-                        // Sortează după dată (cele mai recente primele)
-                        visitors.sort((a, b) => b.timestamp - a.timestamp);
-                        
-                        totalVisitors.textContent = visitors.length;
-                        visitorList.innerHTML = '';
-                        
-                        visitors.forEach(visitor => {
-                            const li = document.createElement('li');
-                            const date = new Date(visitor.timestamp);
-                            li.textContent = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-                            visitorList.appendChild(li);
-                        });
-                    } else {
-                        // Fallback pentru offline
-                        const count = localStorage.getItem('carolers_visitor_count') || '0';
-                        
-                        totalVisitors.textContent = count;
-                        visitorList.innerHTML = `
-                            <li>Offline mode - showing total count only</li>
-                            <li>Total unique visitors: ${count}</li>
-                            <li>Last update: ${new Date().toLocaleString()}</li>
+                        li.innerHTML = `
+                            <strong>Visitor ID:</strong> ${visitor.id.substring(0, 8)}...<br>
+                            <small>First visit: ${firstDate.toLocaleDateString()}<br>
+                            Last visit: ${lastDate.toLocaleDateString()} ${lastDate.toLocaleTimeString()}<br>
+                            Total visits: ${visits}</small>
                         `;
-                    }
-                    
-                    // Afișează panoul
-                    document.getElementById('admin-panel').style.display = 'block';
-                    document.getElementById('admin-panel-overlay').classList.remove('hidden');
-                    document.body.style.overflow = 'hidden';
-                    
-                } catch (error) {
-                    console.error('Error loading visitor data:', error);
-                    showError('Could not load visitor data: ' + error.message);
+                        visitorList.appendChild(li);
+                    });
+                } else {
+                    // Fallback pentru offline
+                    const count = localStorage.getItem('carolers_total_visitors') || '0';
+                    totalVisitors.textContent = count;
+                    visitorList.innerHTML = `
+                        <li>Offline mode - visitor tracking limited</li>
+                        <li>Total unique visitors: ${count}</li>
+                        <li>Last update: ${new Date().toLocaleString()}</li>
+                    `;
                 }
-            } else if (password !== null) {
-                showError('Incorrect password');
+                
+                // Afișează panoul
+                showModal('admin-panel');
+                
+            } catch (error) {
+                console.error('Error loading visitor data:', error);
+                showError('Could not load visitor data: ' + error.message);
             }
         }
         
         function closeAdminPanel() {
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('admin-panel-overlay').classList.add('hidden');
-            document.body.style.overflow = '';
+            hideModal('admin-panel');
         }
         
         function initDateSelector() {
@@ -2274,6 +2406,8 @@
                         
                         if (isConnected) {
                             loadPinsFromFirebase();
+                            // Reîncarcă contorul vizitatori când ne reconectăm
+                            initVisitorCounter();
                         }
                     }
                 });
@@ -2544,6 +2678,7 @@
             hideModal('admin-login-modal');
             hideModal('delete-confirm-modal');
             hideModal('info-modal');
+            hideModal('admin-panel');
         }
         
         function toggleVisited(houseId) {
@@ -2589,6 +2724,9 @@
                 isAdmin = true;
                 closeAdminLogin();
                 updateMap();
+                
+                // După login, afișează panoul cu statistici
+                showAdminPanel();
                 
                 if (!document.getElementById('list-modal').classList.contains('hidden')) {
                     showListModal();
