@@ -1101,7 +1101,7 @@
             }
         }
 
-        /* STILURI PENTRU BUTON MUIZCĂ - ÎN LOCUL BUTONULUI DE FULGI */
+        /* STILURI PENTRU BUTON MUIZCĂ */
         #music-btn {
             width: 60px;
             height: 60px;
@@ -1128,7 +1128,7 @@
             animation: pulse 2s infinite;
         }
 
-        /* STILURI PENTRU BUTON FULGI - MUTAT ÎN STÂNGA DEASUPRA BUTONULUI DE CENTRARE */
+        /* STILURI PENTRU BUTON FULGI */
         #snow-btn {
             width: 60px;
             height: 60px;
@@ -1241,17 +1241,6 @@
             font-weight: 600;
         }
 
-        /* GRUP BUTOANE DREAPTA - REORGANIZAT */
-        #right-controls-top {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
         /* On mobile, positioning adjustments */
         @media (max-width: 767px) {
             .connection-status {
@@ -1273,7 +1262,7 @@
                 width: 95vw;
             }
             
-            #left-controls, #right-controls, #right-controls-top {
+            #left-controls, #right-controls {
                 bottom: 10px;
             }
             
@@ -1282,11 +1271,6 @@
             }
             
             #right-controls {
-                right: 10px;
-            }
-            
-            #right-controls-top {
-                bottom: 90px;
                 right: 10px;
             }
 
@@ -1832,14 +1816,14 @@
         </div>
     </div>
 
-    <!-- Element audio pentru muzică - VERSIUNE LOCALĂ ȘI ONLINE -->
+    <!-- Element audio pentru muzică -->
     <audio id="bg-music" loop preload="auto">
-        <!-- Prima sursă: Muzică locală din folderul site-ului -->
+        <!-- Sursa locală -->
         <source src="christmas-music.mp3" type="audio/mpeg">
-        <!-- Backup: Muzică online publică -->
+        
+        <!-- Sursa online backup -->
         <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
-        <!-- Backup 2: Altă muzică de Crăciun -->
-        <source src="https://assets.mixkit.co/music/preview/mixkit-christmas-jingle-226.mp3" type="audio/mpeg">
+        
         Your browser does not support the audio element.
     </audio>
 
@@ -1886,17 +1870,9 @@
         }
         
         function setupNewFeatures() {
-            // Inițializează fulgii de zăpadă
             initSnowflakes();
-            
-            // Inițializează controlul muzicii
             initMusicControls();
-            
-            // Inițializează butonul de fulgi
             initSnowButton();
-            
-            // Adaugă butonul admin în lista de case
-            setupAdminInList();
         }
         
         function initSnowflakes() {
@@ -1914,14 +1890,12 @@
                 snowflake.style.width = Math.random() * 8 + 4 + 'px';
                 snowflake.style.height = snowflake.style.width;
                 
-                // Adaugă variație în culoare
                 if (Math.random() > 0.7) {
                     snowflake.style.background = 'rgba(200, 230, 255, 0.9)';
                 }
                 
                 snowContainer.appendChild(snowflake);
                 
-                // Elimină fulgul după ce cade
                 setTimeout(() => {
                     if (snowflake.parentNode === snowContainer) {
                         snowContainer.removeChild(snowflake);
@@ -1929,11 +1903,9 @@
                 }, 5000);
             }
             
-            // Creează fulgi la interval
             if (snowInterval) clearInterval(snowInterval);
             snowInterval = setInterval(createSnowflake, 150);
             
-            // Creează fulgi inițiali
             if (snowEnabled) {
                 for (let i = 0; i < 20; i++) {
                     setTimeout(() => createSnowflake(), Math.random() * 1000);
@@ -1944,7 +1916,6 @@
         function initSnowButton() {
             const snowBtn = document.getElementById('snow-btn');
             
-            // Verifică starea salvată
             snowEnabled = localStorage.getItem('carolers_snow') !== 'false';
             
             if (snowEnabled) {
@@ -1955,7 +1926,6 @@
                 snowBtn.textContent = '❄️';
                 snowBtn.classList.add('snow-off');
                 snowBtn.title = 'Turn on snow animation';
-                // Șterge fulgii existenți
                 document.getElementById('snow').innerHTML = '';
             }
             
@@ -1967,7 +1937,6 @@
                     snowBtn.classList.remove('snow-off');
                     snowBtn.title = 'Turn off snow animation';
                     localStorage.setItem('carolers_snow', 'true');
-                    // Repornește animația
                     initSnowflakes();
                     showToast("Snow animation enabled! ❄️", "success");
                 } else {
@@ -1975,7 +1944,6 @@
                     snowBtn.classList.add('snow-off');
                     snowBtn.title = 'Turn on snow animation';
                     localStorage.setItem('carolers_snow', 'false');
-                    // Oprește animația și șterge fulgii
                     if (snowInterval) clearInterval(snowInterval);
                     document.getElementById('snow').innerHTML = '';
                     showToast("Snow animation disabled", "info");
@@ -1987,43 +1955,27 @@
             const musicBtn = document.getElementById('music-btn');
             const bgMusic = document.getElementById('bg-music');
             
-            // Încarcă muzica din fișier local dacă există, altfol din surse online
-            console.log("Initializing music controls...");
-            console.log("Audio element readyState:", bgMusic.readyState);
-            console.log("Audio src:", bgMusic.src);
-            
-            // Verifică starea salvată
+            // Încearcă să pornești muzica automat
             const isMusicOn = localStorage.getItem('carolers_music') !== 'false';
             
             if (isMusicOn) {
-                bgMusic.volume = 0.5; // 50% volum
+                bgMusic.volume = 0.5;
                 musicBtn.textContent = '🔊';
                 musicBtn.classList.add('music-playing');
                 musicBtn.title = 'Turn off Christmas music';
                 
-                // Încearcă să pornească muzica doar după ce utilizatorul interacționează
-                const tryPlayMusic = () => {
-                    console.log("Trying to play music...");
+                // Încearcă auto-play
+                setTimeout(() => {
                     bgMusic.play().then(() => {
-                        console.log("Music started successfully!");
-                        musicBtn.textContent = '🔊';
-                        musicBtn.classList.add('music-playing');
+                        console.log("Music auto-play successful");
                     }).catch(error => {
-                        console.log("Failed to play music:", error);
+                        console.log("Auto-play blocked, waiting for user interaction");
                         musicBtn.textContent = '▶️';
                         musicBtn.classList.remove('music-playing');
-                        musicBtn.title = 'Click to play music (requires user interaction)';
+                        musicBtn.title = 'Click to play music';
                     });
-                };
+                }, 1000);
                 
-                // Așteaptă ca audio-ul să se încarce
-                if (bgMusic.readyState >= 2) { // HAVE_CURRENT_DATA or more
-                    tryPlayMusic();
-                } else {
-                    bgMusic.addEventListener('loadeddata', tryPlayMusic);
-                    // Timeout pentru cazul în care încărcarea durează prea mult
-                    setTimeout(tryPlayMusic, 2000);
-                }
             } else {
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.remove('music-playing');
@@ -2031,12 +1983,9 @@
             }
             
             musicBtn.addEventListener('click', () => {
-                console.log("Music button clicked, current state:", bgMusic.paused ? "paused" : "playing");
-                
                 if (bgMusic.paused) {
                     bgMusic.volume = 0.5;
                     bgMusic.play().then(() => {
-                        console.log("Play succeeded");
                         musicBtn.textContent = '🔊';
                         musicBtn.classList.add('music-playing');
                         musicBtn.title = 'Turn off Christmas music';
@@ -2044,30 +1993,9 @@
                         showToast("Christmas music started! 🎶", "success");
                     }).catch(error => {
                         console.log("Play failed:", error);
-                        
-                        // Încearcă cu o altă sursă dacă prima nu funcționează
-                        if (bgMusic.currentSrc && !bgMusic.currentSrc.includes('christmas-music.mp3')) {
-                            console.log("Trying alternative source...");
-                            // Resetează sursele
-                            bgMusic.load();
-                            setTimeout(() => {
-                                bgMusic.play().then(() => {
-                                    musicBtn.textContent = '🔊';
-                                    musicBtn.classList.add('music-playing');
-                                    localStorage.setItem('carolers_music', 'true');
-                                    showToast("Christmas music started! 🎶", "success");
-                                }).catch(e => {
-                                    console.log("Alternative source also failed:", e);
-                                    showToast("Click play button in browser controls", "info");
-                                    musicBtn.textContent = '▶️';
-                                    musicBtn.title = 'Click to play (browser blocked audio)';
-                                });
-                            }, 100);
-                        } else {
-                            showToast("Click play button in browser controls", "info");
-                            musicBtn.textContent = '▶️';
-                            musicBtn.title = 'Click to play (requires user interaction)';
-                        }
+                        showToast("Click to play music manually", "info");
+                        musicBtn.textContent = '▶️';
+                        musicBtn.title = 'Click to play (requires interaction)';
                     });
                 } else {
                     bgMusic.pause();
@@ -2079,77 +2007,84 @@
                 }
             });
             
-            // Adaugă test audio pentru debug
-            setTimeout(() => {
-                console.log("Audio test - canPlayType MP3:", bgMusic.canPlayType('audio/mpeg'));
-                console.log("Audio test - canPlayType MP3 alternative:", bgMusic.canPlayType('audio/mp3'));
-                console.log("Audio test - networkState:", bgMusic.networkState);
-                console.log("Audio test - error:", bgMusic.error);
-            }, 1000);
+            // Pornește muzica la primul click pe pagină
+            document.addEventListener('click', function startMusicOnFirstClick() {
+                if (bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
+                    bgMusic.play().catch(e => console.log("Play on click failed:", e));
+                }
+                document.removeEventListener('click', startMusicOnFirstClick);
+            });
         }
         
         async function initVisitorCounter() {
             try {
-                // Generează un ID unic pentru această sesiune/visitor
+                // Generează ID unic pentru visitor
                 visitorId = localStorage.getItem('carolers_visitor_id');
                 if (!visitorId) {
                     visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                     localStorage.setItem('carolers_visitor_id', visitorId);
                 }
                 
-                // Adaugă timestamp-ul curent pentru această vizită
-                const visitKey = 'visit_' + Date.now();
-                localStorage.setItem(visitKey, Date.now());
+                // Obține geolocația (doar pentru admin tracking)
+                let geoData = {
+                    country: 'Unknown',
+                    city: 'Unknown',
+                    region: 'Unknown'
+                };
+                
+                try {
+                    const geoResponse = await fetch('https://ipapi.co/json/');
+                    if (geoResponse.ok) {
+                        const geoJson = await geoResponse.json();
+                        geoData = {
+                            country: geoJson.country_name || 'Unknown',
+                            city: geoJson.city || 'Unknown',
+                            region: geoJson.region || 'Unknown',
+                            countryCode: geoJson.country_code || 'unknown'
+                        };
+                    }
+                } catch (geoError) {
+                    console.log("Geolocation fetch failed:", geoError);
+                }
                 
                 if (isConnected) {
                     const database = firebase.database();
                     const visitorRef = database.ref('visitors/' + visitorId);
                     
-                    // Verifică dacă visitor-ul există deja
                     const snapshot = await visitorRef.once('value');
                     
+                    const visitorData = {
+                        id: visitorId,
+                        firstVisit: Date.now(),
+                        lastVisit: Date.now(),
+                        visits: snapshot.exists() ? ((snapshot.val().visits || 1) + 1) : 1,
+                        userAgent: navigator.userAgent.substring(0, 150),
+                        timestamp: Date.now(),
+                        // ADAUGĂ GEOLOCAȚIA (doar pentru admin)
+                        country: geoData.country,
+                        city: geoData.city,
+                        region: geoData.region,
+                        countryCode: geoData.countryCode
+                    };
+                    
                     if (!snapshot.exists()) {
-                        // Visitor nou - adaugă înregistrare
-                        const visitorData = {
-                            id: visitorId,
-                            firstVisit: Date.now(),
-                            lastVisit: Date.now(),
-                            visits: 1,
-                            userAgent: navigator.userAgent.substring(0, 150),
-                            timestamp: Date.now()
-                        };
-                        
                         await visitorRef.set(visitorData);
-                        console.log("New visitor added to Firebase");
                     } else {
-                        // Visitor existent - actualizează
-                        const existingData = snapshot.val();
-                        const visitorData = {
-                            ...existingData,
-                            lastVisit: Date.now(),
-                            visits: (existingData.visits || 1) + 1,
-                            timestamp: Date.now()
-                        };
-                        
                         await visitorRef.update(visitorData);
-                        console.log("Existing visitor updated in Firebase");
                     }
                     
-                    // Obține numărul total de vizitatori unici
+                    // Obține numărul total de vizitatori
                     const allVisitorsRef = database.ref('visitors');
                     const allVisitorsSnapshot = await allVisitorsRef.once('value');
                     const totalVisitors = allVisitorsSnapshot.numChildren();
                     
-                    // Actualizează contorul vizual
                     document.getElementById('visitor-count').textContent = totalVisitors;
-                    console.log("Total unique visitors:", totalVisitors);
                     
                 } else {
-                    // Mod offline - folosește localStorage
+                    // Mod offline
                     let totalVisitors = parseInt(localStorage.getItem('carolers_total_visitors') || '0');
-                    
-                    // Verifică dacă este prima vizită pentru acest visitor
                     const visitorKey = 'visitor_' + visitorId;
+                    
                     if (!localStorage.getItem(visitorKey)) {
                         totalVisitors++;
                         localStorage.setItem('carolers_total_visitors', totalVisitors.toString());
@@ -2157,24 +2092,16 @@
                     }
                     
                     document.getElementById('visitor-count').textContent = totalVisitors;
-                    console.log("Offline visitor count:", totalVisitors);
                 }
                 
             } catch (error) {
                 console.error('Error initializing visitor counter:', error);
-                // Fallback simplu
                 const fallbackCount = localStorage.getItem('carolers_visitor_count') || '1';
                 document.getElementById('visitor-count').textContent = fallbackCount;
             }
         }
         
-        function setupAdminInList() {
-            // Panoul admin pentru vizitatori este acum în modalul de admin login
-            // Se accesează prin butonul "Admin Login" din lista de case
-        }
-        
         async function showAdminPanel() {
-            // Această funcție este apelată când admin-ul se loghează cu succes
             try {
                 const totalVisitors = document.getElementById('total-visitors');
                 const visitorList = document.getElementById('visitor-list');
@@ -2192,38 +2119,76 @@
                         });
                     });
                     
-                    // Sortează după ultima vizită (cele mai recente primele)
+                    // Sortează după ultima vizită
                     visitors.sort((a, b) => b.lastVisit - a.lastVisit);
                     
                     totalVisitors.textContent = visitors.length;
                     visitorList.innerHTML = '';
                     
+                    // Calculează statistici pe țări (doar pentru admin)
+                    const countryStats = {};
+                    visitors.forEach(visitor => {
+                        const country = visitor.country || 'Unknown';
+                        countryStats[country] = (countryStats[country] || 0) + 1;
+                    });
+                    
+                    // Afișează statistici pe țări
+                    let statsHtml = '<div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 10px;">';
+                    statsHtml += '<h4 style="margin-bottom: 10px; color: #dc2626;">🌍 Country Statistics</h4>';
+                    
+                    Object.entries(countryStats)
+                        .sort((a, b) => b[1] - a[1])
+                        .forEach(([country, count]) => {
+                            const percentage = (count / visitors.length * 100).toFixed(1);
+                            statsHtml += `
+                                <div style="margin-bottom: 8px; font-size: 14px;">
+                                    <span>${country}:</span>
+                                    <span style="float: right; font-weight: bold;">${count} (${percentage}%)</span>
+                                    <div style="height: 6px; background: #e5e7eb; border-radius: 3px; margin-top: 3px;">
+                                        <div style="height: 100%; background: #dc2626; width: ${percentage}%; border-radius: 3px;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    
+                    statsHtml += '</div>';
+                    
+                    // Afișează lista vizitatorilor cu detalii (doar pentru admin)
                     visitors.forEach(visitor => {
                         const li = document.createElement('li');
                         const firstDate = new Date(visitor.firstVisit);
                         const lastDate = new Date(visitor.lastVisit);
                         const visits = visitor.visits || 1;
+                        const country = visitor.country || 'Unknown';
+                        const city = visitor.city || 'Unknown';
                         
                         li.innerHTML = `
-                            <strong>Visitor ID:</strong> ${visitor.id.substring(0, 8)}...<br>
-                            <small>First visit: ${firstDate.toLocaleDateString()}<br>
-                            Last visit: ${lastDate.toLocaleDateString()} ${lastDate.toLocaleTimeString()}<br>
-                            Total visits: ${visits}</small>
+                            <div style="margin-bottom: 5px;">
+                                <strong>📍 ${country}</strong>${city !== 'Unknown' ? `, ${city}` : ''}
+                            </div>
+                            <div style="font-size: 12px; color: #666;">
+                                First visit: ${firstDate.toLocaleDateString()}<br>
+                                Last visit: ${lastDate.toLocaleDateString()} ${lastDate.toLocaleTimeString()}<br>
+                                Total visits: ${visits}
+                            </div>
+                            <hr style="margin: 10px 0; border-color: #eee;">
                         `;
                         visitorList.appendChild(li);
                     });
+                    
+                    // Adaugă statisticile înainte de listă
+                    visitorList.parentNode.insertBefore(document.createRange().createContextualFragment(statsHtml), visitorList);
+                    
                 } else {
-                    // Fallback pentru offline
+                    // Fallback offline
                     const count = localStorage.getItem('carolers_total_visitors') || '0';
                     totalVisitors.textContent = count;
                     visitorList.innerHTML = `
                         <li>Offline mode - visitor tracking limited</li>
                         <li>Total unique visitors: ${count}</li>
-                        <li>Last update: ${new Date().toLocaleString()}</li>
                     `;
                 }
                 
-                // Afișează panoul
                 showModal('admin-panel');
                 
             } catch (error) {
@@ -2243,11 +2208,9 @@
             const currentYear = new Date().getFullYear();
             const currentDate = new Date();
             
-            // Adaugă zilele din Decembrie (1-31)
             for (let day = 1; day <= 31; day++) {
-                const date = new Date(currentYear, 11, day); // 11 = Decembrie (0-indexed)
+                const date = new Date(currentYear, 11, day);
                 
-                // Verifică dacă data este în viitor sau astăzi
                 if (date >= currentDate || date.getDate() === currentDate.getDate()) {
                     const formattedDate = date.toLocaleDateString('en-US', {
                         day: 'numeric',
@@ -2262,7 +2225,6 @@
         }
         
         function initTimeSelectors() {
-            // Inițializează selectorii de ore (00-23)
             const hourSelectors = ['start-hour', 'end-hour'];
             hourSelectors.forEach(id => {
                 const select = document.getElementById(id);
@@ -2275,7 +2237,6 @@
                 }
             });
             
-            // Inițializează selectorii de minute (00-59, la fiecare 5 minute)
             const minuteSelectors = ['start-minute', 'end-minute'];
             minuteSelectors.forEach(id => {
                 const select = document.getElementById(id);
@@ -2288,7 +2249,6 @@
                 }
             });
             
-            // Adaugă event listeners pentru toți selectorii
             const timeSelectors = ['start-hour', 'start-minute', 'end-hour', 'end-minute', 'schedule-date'];
             timeSelectors.forEach(id => {
                 document.getElementById(id).addEventListener('change', function() {
@@ -2412,7 +2372,6 @@
         
         function initFirebase() {
             try {
-                // Initialize Firebase cu configurația din fișier extern
                 if (typeof firebase === 'undefined') {
                     console.error('Firebase SDK not loaded');
                     isConnected = false;
@@ -2430,7 +2389,6 @@
                 
                 const database = firebase.database();
                 
-                // Check connection status
                 const connectedRef = database.ref(".info/connected");
                 connectedRef.on("value", function(snap) {
                     const connected = snap.val() === true;
@@ -2442,7 +2400,6 @@
                         
                         if (isConnected) {
                             loadPinsFromFirebase();
-                            // Reîncarcă contorul vizitatori când ne reconectăm
                             initVisitorCounter();
                         }
                     }
@@ -2480,11 +2437,9 @@
                         });
                         console.log("Loaded pins from Firebase:", pins.length);
                         
-                        // Save to local storage as backup
                         localStorage.setItem('carolersPins', JSON.stringify(pins));
                     } else {
                         console.log("No data in Firebase");
-                        // Try to load from local storage if Firebase is empty
                         loadFromLocalStorage();
                     }
                     updateMap();
@@ -2630,23 +2585,20 @@
                         .then(() => {
                             console.log("Pin deleted from Firebase");
                             closeDeleteConfirmModal();
-                            // Forțează reîncărcarea datelor din Firebase
                             loadPinsFromFirebase();
                         })
                         .catch((error) => {
                             showError('Error deleting from server: ' + error.message);
                         });
                 } else {
-                    // Delete from local storage
                     pins = pins.filter(pin => pin.id !== selectedPin.id);
                     localStorage.setItem('carolersPins', JSON.stringify(pins));
                     updateMap();
                     updatePinCount();
                     closeDeleteConfirmModal();
                     
-                    // Actualizează lista dacă este deschisă
                     if (!document.getElementById('list-modal').classList.contains('hidden')) {
-                        showListModal(); // Reîncarcă lista
+                        showListModal();
                     }
                 }
             } catch (error) {
@@ -2761,7 +2713,6 @@
                 closeAdminLogin();
                 updateMap();
                 
-                // După login, afișează panoul cu statistici
                 showAdminPanel();
                 
                 if (!document.getElementById('list-modal').classList.contains('hidden')) {
@@ -2828,7 +2779,6 @@
             if (pin) {
                 showDeleteModalForPin(pin);
             } else {
-                // Dacă pin-ul nu a fost găsit, reîncarcă lista
                 showListModal();
             }
         }
@@ -2856,21 +2806,18 @@
                 return;
             }
             
-            // Validare data
             const selectedDate = document.getElementById('schedule-date').value;
             if (selectedDate) {
                 const currentDate = new Date();
                 const selectedDateStr = selectedDate + ' ' + currentDate.getFullYear();
                 const selectedDateObj = new Date(selectedDateStr);
                 
-                // Verifică dacă data este în trecut (ignoră ziua curentă)
                 if (selectedDateObj < currentDate && selectedDateObj.getDate() !== currentDate.getDate()) {
                     showError('Cannot select past dates! Please select today or a future date.');
                     return;
                 }
             }
             
-            // Validare ore
             const startTime = getSelectedTime('start');
             const endTime = getSelectedTime('end');
             
@@ -2915,7 +2862,6 @@
                             showError('Error saving to server: ' + error.message);
                         });
                 } else {
-                    // Save to local storage
                     const newPin = {
                         id: 'local_' + Date.now(),
                         ...pinData
@@ -2945,7 +2891,6 @@
                 maxZoom: 19
             }).addTo(map);
             
-            // Set initial view to default coordinates
             map.setView(DEFAULT_CENTER, 15);
             
             map.on('click', (e) => {
@@ -3092,7 +3037,6 @@
         }
         
         function showToast(message, type = 'info') {
-            // Elimină toast-urile vechi
             const oldToasts = document.querySelectorAll('.toast');
             oldToasts.forEach(toast => toast.remove());
             
@@ -3101,7 +3045,6 @@
             toast.textContent = message;
             document.body.appendChild(toast);
             
-            // Elimină toast-ul după 3 secunde
             setTimeout(() => {
                 toast.remove();
             }, 3000);
