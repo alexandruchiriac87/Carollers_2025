@@ -67,18 +67,33 @@
         
         #pin-count {
             background: rgba(255,255,255,0.2);
-            padding: 0.4rem 0.8rem;
+            padding: 0.5rem 0.8rem;
             border-radius: 9999px;
             font-weight: 600;
             font-size: 0.875rem;
             white-space: nowrap;
             cursor: pointer;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
         }
         
         #pin-count:hover {
             background: rgba(255,255,255,0.3);
             transform: scale(1.05);
+        }
+        
+        #pin-count-main {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        
+        #pin-count-visited {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            margin-top: 2px;
         }
 
         /* Info/Help Button */
@@ -1048,6 +1063,12 @@
             text-align: center;
         }
         
+        .time-selector-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        
         /* On mobile, positioning adjustments */
         @media (max-width: 767px) {
             .connection-status {
@@ -1098,7 +1119,20 @@
                 gap: 0.25rem;
             }
 
-            #pin-count, #info-btn {
+            #pin-count {
+                min-width: 70px;
+                padding: 0.3rem 0.6rem;
+            }
+            
+            #pin-count-main {
+                font-size: 0.8rem;
+            }
+            
+            #pin-count-visited {
+                font-size: 0.65rem;
+            }
+            
+            #info-btn {
                 font-size: 0.75rem;
                 padding: 0.3rem 0.6rem;
             }
@@ -1110,6 +1144,10 @@
             
             .time-separator {
                 display: none;
+            }
+            
+            .time-selector-group {
+                grid-template-columns: 1fr;
             }
         }
         
@@ -1149,7 +1187,8 @@
                     ❓ Info
                 </button>
                 <div id="pin-count" title="Click for house list">
-                    <span id="pin-count-text">0 houses</span>
+                    <div id="pin-count-main">0 houses</div>
+                    <div id="pin-count-visited">0 visited</div>
                 </div>
             </div>
         </div>
@@ -1371,11 +1410,10 @@
                     
                     <!-- DATA SELECTOR -->
                     <div class="schedule-date">
-                        <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Select date:</label>
+                        <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Select date (December only):</label>
                         <select class="form-input" id="schedule-date" style="padding: 0.75rem;">
                             <option value="">-- Select date --</option>
-                            <option value="24 Dec">24 December</option>
-                            <option value="25 Dec">25 December</option>
+                            <!-- Dates will be populated by JavaScript -->
                         </select>
                     </div>
                     
@@ -1383,64 +1421,30 @@
                     <div class="schedule-grid">
                         <div>
                             <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Start time:</label>
-                            <select class="time-input" id="start-time" style="padding: 0.75rem;">
-                                <option value="">-- Select time --</option>
-                                <option value="00:00">00:00</option>
-                                <option value="01:00">01:00</option>
-                                <option value="02:00">02:00</option>
-                                <option value="03:00">03:00</option>
-                                <option value="04:00">04:00</option>
-                                <option value="05:00">05:00</option>
-                                <option value="06:00">06:00</option>
-                                <option value="07:00">07:00</option>
-                                <option value="08:00">08:00</option>
-                                <option value="09:00">09:00</option>
-                                <option value="10:00">10:00</option>
-                                <option value="11:00">11:00</option>
-                                <option value="12:00">12:00</option>
-                                <option value="13:00">13:00</option>
-                                <option value="14:00">14:00</option>
-                                <option value="15:00">15:00</option>
-                                <option value="16:00">16:00</option>
-                                <option value="17:00">17:00</option>
-                                <option value="18:00">18:00</option>
-                                <option value="19:00">19:00</option>
-                                <option value="20:00">20:00</option>
-                                <option value="21:00">21:00</option>
-                                <option value="22:00">22:00</option>
-                                <option value="23:00">23:00</option>
-                            </select>
+                            <div class="time-selector-group">
+                                <select class="time-input" id="start-hour" style="padding: 0.75rem;">
+                                    <option value="">Hour</option>
+                                    <!-- Hours 00-23 -->
+                                </select>
+                                <select class="time-input" id="start-minute" style="padding: 0.75rem;">
+                                    <option value="">Minute</option>
+                                    <!-- Minutes 00-59 -->
+                                </select>
+                            </div>
                         </div>
                         <div class="time-separator">-</div>
                         <div>
                             <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">End time:</label>
-                            <select class="time-input" id="end-time" style="padding: 0.75rem;">
-                                <option value="">-- Select time --</option>
-                                <option value="00:00">00:00</option>
-                                <option value="01:00">01:00</option>
-                                <option value="02:00">02:00</option>
-                                <option value="03:00">03:00</option>
-                                <option value="04:00">04:00</option>
-                                <option value="05:00">05:00</option>
-                                <option value="06:00">06:00</option>
-                                <option value="07:00">07:00</option>
-                                <option value="08:00">08:00</option>
-                                <option value="09:00">09:00</option>
-                                <option value="10:00">10:00</option>
-                                <option value="11:00">11:00</option>
-                                <option value="12:00">12:00</option>
-                                <option value="13:00">13:00</option>
-                                <option value="14:00">14:00</option>
-                                <option value="15:00">15:00</option>
-                                <option value="16:00">16:00</option>
-                                <option value="17:00">17:00</option>
-                                <option value="18:00">18:00</option>
-                                <option value="19:00">19:00</option>
-                                <option value="20:00">20:00</option>
-                                <option value="21:00">21:00</option>
-                                <option value="22:00">22:00</option>
-                                <option value="23:00">23:00</option>
-                            </select>
+                            <div class="time-selector-group">
+                                <select class="time-input" id="end-hour" style="padding: 0.75rem;">
+                                    <option value="">Hour</option>
+                                    <!-- Hours 00-23 -->
+                                </select>
+                                <select class="time-input" id="end-minute" style="padding: 0.75rem;">
+                                    <option value="">Minute</option>
+                                    <!-- Minutes 00-59 -->
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
@@ -1599,51 +1603,86 @@
             initIconGrid();
             setupEventListeners();
             initFirebase();
-            initScheduleListeners();
+            initDateSelector();
+            initTimeSelectors();
         }
         
-        function initScheduleListeners() {
-            // Ascultăm pentru schimbări în selectorii de oră și dată
-            const dateInput = document.getElementById('schedule-date');
-            const startTimeInput = document.getElementById('start-time');
-            const endTimeInput = document.getElementById('end-time');
+        function initDateSelector() {
+            const dateSelect = document.getElementById('schedule-date');
+            dateSelect.innerHTML = '<option value="">-- Select date --</option>';
             
-            [dateInput, startTimeInput, endTimeInput].forEach(input => {
-                input.addEventListener('change', updateScheduleDisplay);
-            });
+            const currentYear = new Date().getFullYear();
+            const currentDate = new Date();
             
-            // Validare automată pentru ore
-            startTimeInput.addEventListener('change', validateTimes);
-            endTimeInput.addEventListener('change', validateTimes);
-        }
-        
-        function validateTimes() {
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
-            
-            if (startTime && endTime) {
-                // Convertim orele în minute pentru comparație
-                const startMinutes = timeToMinutes(startTime);
-                const endMinutes = timeToMinutes(endTime);
+            // Adaugă zilele din Decembrie (1-31)
+            for (let day = 1; day <= 31; day++) {
+                const date = new Date(currentYear, 11, day); // 11 = Decembrie (0-indexed)
                 
-                if (endMinutes <= startMinutes) {
-                    showError('End time must be after start time!');
-                    document.getElementById('end-time').value = '';
-                    return false;
+                // Verifică dacă data este în viitor sau astăzi
+                if (date >= currentDate || date.getDate() === currentDate.getDate()) {
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        day: 'numeric',
+                        month: 'short'
+                    });
+                    const option = document.createElement('option');
+                    option.value = formattedDate;
+                    option.textContent = formattedDate;
+                    dateSelect.appendChild(option);
                 }
             }
-            return true;
         }
         
-        function timeToMinutes(time) {
-            const [hours, minutes] = time.split(':').map(Number);
-            return hours * 60 + minutes;
+        function initTimeSelectors() {
+            // Inițializează selectorii de ore (00-23)
+            const hourSelectors = ['start-hour', 'end-hour'];
+            hourSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Hour</option>';
+                for (let hour = 0; hour < 24; hour++) {
+                    const option = document.createElement('option');
+                    option.value = hour.toString().padStart(2, '0');
+                    option.textContent = hour.toString().padStart(2, '0');
+                    select.appendChild(option);
+                }
+            });
+            
+            // Inițializează selectorii de minute (00-59, la fiecare 5 minute)
+            const minuteSelectors = ['start-minute', 'end-minute'];
+            minuteSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Minute</option>';
+                for (let minute = 0; minute < 60; minute += 5) {
+                    const option = document.createElement('option');
+                    option.value = minute.toString().padStart(2, '0');
+                    option.textContent = minute.toString().padStart(2, '0');
+                    select.appendChild(option);
+                }
+            });
+            
+            // Adaugă event listeners pentru toți selectorii
+            const timeSelectors = ['start-hour', 'start-minute', 'end-hour', 'end-minute', 'schedule-date'];
+            timeSelectors.forEach(id => {
+                document.getElementById(id).addEventListener('change', function() {
+                    updateScheduleDisplay();
+                    validateTimes();
+                });
+            });
+        }
+        
+        function getSelectedTime(startOrEnd) {
+            const hour = document.getElementById(`${startOrEnd}-hour`).value;
+            const minute = document.getElementById(`${startOrEnd}-minute`).value;
+            
+            if (hour && minute) {
+                return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+            }
+            return '';
         }
         
         function updateScheduleDisplay() {
             const date = document.getElementById('schedule-date').value;
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
             
             const display = document.getElementById('schedule-display');
             const scheduleText = document.getElementById('schedule-text');
@@ -1651,20 +1690,14 @@
             let scheduleString = '';
             
             if (date) {
-                // Folosim direct valoarea din dropdown (ex: "24 Dec")
                 scheduleString += date;
                 
                 if (startTime && endTime) {
-                    // Folosim orele direct din dropdown
-                    const formattedStart = startTime.substring(0, 5);
-                    const formattedEnd = endTime.substring(0, 5);
-                    scheduleString += `, ${formattedStart}-${formattedEnd}`;
+                    scheduleString += `, ${startTime}-${endTime}`;
                 } else if (startTime) {
-                    const formattedStart = startTime.substring(0, 5);
-                    scheduleString += `, from ${formattedStart}`;
+                    scheduleString += `, from ${startTime}`;
                 } else if (endTime) {
-                    const formattedEnd = endTime.substring(0, 5);
-                    scheduleString += `, until ${formattedEnd}`;
+                    scheduleString += `, until ${endTime}`;
                 }
             }
             
@@ -1678,11 +1711,11 @@
         
         function getScheduleValue() {
             const date = document.getElementById('schedule-date').value;
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
             
             if (!date && !startTime && !endTime) {
-                return ''; // Niciun interval selectat
+                return '';
             }
             
             let scheduleString = '';
@@ -1692,30 +1725,50 @@
             }
             
             if (startTime && endTime) {
-                const formattedStart = startTime.substring(0, 5);
-                const formattedEnd = endTime.substring(0, 5);
                 if (scheduleString) {
-                    scheduleString += `, ${formattedStart}-${formattedEnd}`;
+                    scheduleString += `, ${startTime}-${endTime}`;
                 } else {
-                    scheduleString = `${formattedStart}-${formattedEnd}`;
+                    scheduleString = `${startTime}-${endTime}`;
                 }
             } else if (startTime) {
-                const formattedStart = startTime.substring(0, 5);
                 if (scheduleString) {
-                    scheduleString += `, from ${formattedStart}`;
+                    scheduleString += `, from ${startTime}`;
                 } else {
-                    scheduleString = `From ${formattedStart}`;
+                    scheduleString = `From ${startTime}`;
                 }
             } else if (endTime) {
-                const formattedEnd = endTime.substring(0, 5);
                 if (scheduleString) {
-                    scheduleString += `, until ${formattedEnd}`;
+                    scheduleString += `, until ${endTime}`;
                 } else {
-                    scheduleString = `Until ${formattedEnd}`;
+                    scheduleString = `Until ${endTime}`;
                 }
             }
             
             return scheduleString;
+        }
+        
+        function validateTimes() {
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            if (startTime && endTime) {
+                const startMinutes = timeToMinutes(startTime);
+                const endMinutes = timeToMinutes(endTime);
+                
+                if (endMinutes <= startMinutes) {
+                    showError('End time must be after start time! Please select a later end time.');
+                    document.getElementById('end-hour').value = '';
+                    document.getElementById('end-minute').value = '';
+                    document.getElementById('schedule-display').classList.add('hidden');
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        function timeToMinutes(time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
         }
         
         function setupEventListeners() {
@@ -1944,7 +1997,10 @@
                     const database = firebase.database();
                     database.ref('pins/' + selectedPin.id).remove()
                         .then(() => {
+                            console.log("Pin deleted from Firebase");
                             closeDeleteConfirmModal();
+                            // Forțează reîncărcarea datelor din Firebase
+                            loadPinsFromFirebase();
                         })
                         .catch((error) => {
                             showError('Error deleting from server: ' + error.message);
@@ -1956,6 +2012,11 @@
                     updateMap();
                     updatePinCount();
                     closeDeleteConfirmModal();
+                    
+                    // Actualizează lista dacă este deschisă
+                    if (!document.getElementById('list-modal').classList.contains('hidden')) {
+                        showListModal(); // Reîncarcă lista
+                    }
                 }
             } catch (error) {
                 showError('Error deleting house: ' + error.message);
@@ -1966,8 +2027,8 @@
             const count = pins.length;
             const visitedCount = Object.keys(visitedHouses).length;
             const text = count === 1 ? 'house' : 'houses';
-            const visitedText = visitedCount > 0 ? ` (${visitedCount} visited)` : '';
-            document.getElementById('pin-count-text').textContent = `${count} ${text}${visitedText}`;
+            document.getElementById('pin-count-main').textContent = `${count} ${text}`;
+            document.getElementById('pin-count-visited').textContent = `${visitedCount} visited`;
         }
         
         function showError(message) {
@@ -2131,6 +2192,9 @@
             const pin = pins.find(p => p.id === houseId);
             if (pin) {
                 showDeleteModalForPin(pin);
+            } else {
+                // Dacă pin-ul nu a fost găsit, reîncarcă lista
+                showListModal();
             }
         }
         
@@ -2157,13 +2221,31 @@
                 return;
             }
             
+            // Validare data
+            const selectedDate = document.getElementById('schedule-date').value;
+            if (selectedDate) {
+                const currentDate = new Date();
+                const selectedDateStr = selectedDate + ' ' + currentDate.getFullYear();
+                const selectedDateObj = new Date(selectedDateStr);
+                
+                // Verifică dacă data este în trecut (ignoră ziua curentă)
+                if (selectedDateObj < currentDate && selectedDateObj.getDate() !== currentDate.getDate()) {
+                    showError('Cannot select past dates! Please select today or a future date.');
+                    return;
+                }
+            }
+            
             // Validare ore
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
             
             if (startTime && endTime) {
-                if (!validateTimes()) {
-                    return; // Dacă validarea eșuează, nu continua
+                const startMinutes = timeToMinutes(startTime);
+                const endMinutes = timeToMinutes(endTime);
+                
+                if (endMinutes <= startMinutes) {
+                    showError('End time must be after start time!');
+                    return;
                 }
             }
             
@@ -2171,7 +2253,7 @@
                 name,
                 address,
                 streetNumber,
-                schedule: getScheduleValue(), // Folosim noua funcție
+                schedule: getScheduleValue(),
                 notes: document.getElementById('notes').value,
                 icon: selectedIcon,
                 password: document.getElementById('password').value,
