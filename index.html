@@ -1101,17 +1101,7 @@
             }
         }
 
-        /* STILURI PENTRU BUTON MUIZCĂ */
-        #music-controls {
-            position: fixed;
-            bottom: 100px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
+        /* STILURI PENTRU BUTON MUIZCĂ - ÎN LOCUL BUTONULUI DE FULGI */
         #music-btn {
             width: 60px;
             height: 60px;
@@ -1138,7 +1128,7 @@
             animation: pulse 2s infinite;
         }
 
-        /* STILURI PENTRU BUTON FULGI */
+        /* STILURI PENTRU BUTON FULGI - MUTAT ÎN STÂNGA DEASUPRA BUTONULUI DE CENTRARE */
         #snow-btn {
             width: 60px;
             height: 60px;
@@ -1251,6 +1241,17 @@
             font-weight: 600;
         }
 
+        /* GRUP BUTOANE DREAPTA - REORGANIZAT */
+        #right-controls-top {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
         /* On mobile, positioning adjustments */
         @media (max-width: 767px) {
             .connection-status {
@@ -1272,7 +1273,7 @@
                 width: 95vw;
             }
             
-            #left-controls, #right-controls {
+            #left-controls, #right-controls, #right-controls-top {
                 bottom: 10px;
             }
             
@@ -1281,6 +1282,11 @@
             }
             
             #right-controls {
+                right: 10px;
+            }
+            
+            #right-controls-top {
+                bottom: 90px;
                 right: 10px;
             }
 
@@ -1343,11 +1349,6 @@
             #visitor-count {
                 font-size: 14px;
             }
-            
-            #music-controls {
-                bottom: 90px;
-                right: 10px;
-            }
         }
         
         /* On desktop */
@@ -1406,19 +1407,19 @@
             <span>👥 Visitors:</span>
             <span id="visitor-count">0</span>
         </div>
-
-        <!-- Buton muzică și fulgi -->
-        <div id="music-controls">
-            <button id="snow-btn" title="Toggle snow animation">
-                ❄️
-            </button>
-            <button id="music-btn" title="Toggle Christmas music">
-                🔇
-            </button>
-        </div>
         
         <!-- LEFT BUTTONS -->
         <div id="left-controls">
+            <!-- BUTON FULGI DE ZĂPADĂ - SUS -->
+            <button id="snow-btn" title="Toggle snow animation">
+                ❄️
+            </button>
+            
+            <!-- BUTON MUIZCĂ - POZIȚIONAT CORECT -->
+            <button id="music-btn" title="Toggle Christmas music">
+                🔇
+            </button>
+            
             <button id="center-btn" title="Center map on default location">
                 🏠
             </button>
@@ -1427,7 +1428,7 @@
             </button>
         </div>
         
-        <!-- RIGHT BUTTONS -->
+        <!-- RIGHT BUTTONS (DOAR ADD ȘI SHARE) -->
         <div id="right-controls">
             <button id="share-btn-right" title="Share on WhatsApp">
                 📱
@@ -1831,10 +1832,19 @@
         </div>
     </div>
 
-    <!-- Element audio pentru muzică -->
-    <audio id="bg-music" loop preload="metadata">
+    <!-- Element audio pentru muzică - VERSIUNE LOCALĂ ȘI ONLINE -->
+    <audio id="bg-music" loop preload="auto">
+       <!-- Prima sursă: Muzică locală din folderul site-ului -->
+       <!-- <source src="christmas-music.mp3" type="audio/mpeg">-->
+        <!-- Sursa principală - Jingle Bells instrumental -->
         <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
+        
+        <!-- Backup - Christmas Jingle -->
         <source src="https://assets.mixkit.co/music/preview/mixkit-christmas-jingle-226.mp3" type="audio/mpeg">
+        
+        <!-- Backup 2 - Pixabay Christmas -->
+        <source src="https://cdn.pixabay.com/download/audio/2022/12/05/audio_8e6a3a6cd4.mp3" type="audio/mpeg">
+        
         Your browser does not support the audio element.
     </audio>
 
@@ -1909,7 +1919,7 @@
                 snowflake.style.width = Math.random() * 8 + 4 + 'px';
                 snowflake.style.height = snowflake.style.width;
                 
-                // Adaugă variație în culoare (albastru deschis pentru unii fulgi)
+                // Adaugă variație în culoare
                 if (Math.random() > 0.7) {
                     snowflake.style.background = 'rgba(200, 230, 255, 0.9)';
                 }
@@ -1982,25 +1992,43 @@
             const musicBtn = document.getElementById('music-btn');
             const bgMusic = document.getElementById('bg-music');
             
+            // Încarcă muzica din fișier local dacă există, altfol din surse online
+            console.log("Initializing music controls...");
+            console.log("Audio element readyState:", bgMusic.readyState);
+            console.log("Audio src:", bgMusic.src);
+            
             // Verifică starea salvată
-            const isMusicOn = localStorage.getItem('carolers_music') === 'true';
+            const isMusicOn = localStorage.getItem('carolers_music') !== 'false';
             
             if (isMusicOn) {
-                bgMusic.volume = 0.3; // Setează volumul la 30% (mai scăzut)
+                bgMusic.volume = 0.5; // 50% volum
                 musicBtn.textContent = '🔊';
                 musicBtn.classList.add('music-playing');
                 musicBtn.title = 'Turn off Christmas music';
                 
-                // Încearcă să pornească muzica (cu delay pentru autoplay policies)
-                setTimeout(() => {
-                    bgMusic.play().catch(e => {
-                        console.log("Autoplay blocked:", e);
-                        // Dacă autoplay e blocat, schimbă butonul
+                // Încearcă să pornească muzica doar după ce utilizatorul interacționează
+                const tryPlayMusic = () => {
+                    console.log("Trying to play music...");
+                    bgMusic.play().then(() => {
+                        console.log("Music started successfully!");
+                        musicBtn.textContent = '🔊';
+                        musicBtn.classList.add('music-playing');
+                    }).catch(error => {
+                        console.log("Failed to play music:", error);
                         musicBtn.textContent = '▶️';
                         musicBtn.classList.remove('music-playing');
-                        musicBtn.title = 'Click to play music (browser blocked autoplay)';
+                        musicBtn.title = 'Click to play music (requires user interaction)';
                     });
-                }, 1000);
+                };
+                
+                // Așteaptă ca audio-ul să se încarce
+                if (bgMusic.readyState >= 2) { // HAVE_CURRENT_DATA or more
+                    tryPlayMusic();
+                } else {
+                    bgMusic.addEventListener('loadeddata', tryPlayMusic);
+                    // Timeout pentru cazul în care încărcarea durează prea mult
+                    setTimeout(tryPlayMusic, 2000);
+                }
             } else {
                 musicBtn.textContent = '🔇';
                 musicBtn.classList.remove('music-playing');
@@ -2008,20 +2036,43 @@
             }
             
             musicBtn.addEventListener('click', () => {
+                console.log("Music button clicked, current state:", bgMusic.paused ? "paused" : "playing");
+                
                 if (bgMusic.paused) {
-                    bgMusic.volume = 0.3;
+                    bgMusic.volume = 0.5;
                     bgMusic.play().then(() => {
+                        console.log("Play succeeded");
                         musicBtn.textContent = '🔊';
                         musicBtn.classList.add('music-playing');
                         musicBtn.title = 'Turn off Christmas music';
                         localStorage.setItem('carolers_music', 'true');
                         showToast("Christmas music started! 🎶", "success");
-                    }).catch(e => {
-                        console.log("Play failed:", e);
-                        showToast("Click play button in browser controls", "info");
-                        // Schimbă butonul pentru a indica că trebuie interacțiune manuală
-                        musicBtn.textContent = '▶️';
-                        musicBtn.title = 'Click to play (requires user interaction)';
+                    }).catch(error => {
+                        console.log("Play failed:", error);
+                        
+                        // Încearcă cu o altă sursă dacă prima nu funcționează
+                        if (bgMusic.currentSrc && !bgMusic.currentSrc.includes('christmas-music.mp3')) {
+                            console.log("Trying alternative source...");
+                            // Resetează sursele
+                            bgMusic.load();
+                            setTimeout(() => {
+                                bgMusic.play().then(() => {
+                                    musicBtn.textContent = '🔊';
+                                    musicBtn.classList.add('music-playing');
+                                    localStorage.setItem('carolers_music', 'true');
+                                    showToast("Christmas music started! 🎶", "success");
+                                }).catch(e => {
+                                    console.log("Alternative source also failed:", e);
+                                    showToast("Click play button in browser controls", "info");
+                                    musicBtn.textContent = '▶️';
+                                    musicBtn.title = 'Click to play (browser blocked audio)';
+                                });
+                            }, 100);
+                        } else {
+                            showToast("Click play button in browser controls", "info");
+                            musicBtn.textContent = '▶️';
+                            musicBtn.title = 'Click to play (requires user interaction)';
+                        }
                     });
                 } else {
                     bgMusic.pause();
@@ -2033,23 +2084,13 @@
                 }
             });
             
-            // Încearcă auto-play cu interacțiunea utilizatorului
-            let userInteracted = false;
-            
-            const tryPlayOnInteraction = () => {
-                if (!userInteracted && bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
-                    bgMusic.play().then(() => {
-                        musicBtn.textContent = '🔊';
-                        musicBtn.classList.add('music-playing');
-                    }).catch(e => console.log("Play on interaction failed:", e));
-                }
-                userInteracted = true;
-            };
-            
-            // Adaugă event listeners pentru interacțiunea utilizatorului
-            ['click', 'touchstart', 'keydown'].forEach(event => {
-                document.addEventListener(event, tryPlayOnInteraction, { once: true });
-            });
+            // Adaugă test audio pentru debug
+            setTimeout(() => {
+                console.log("Audio test - canPlayType MP3:", bgMusic.canPlayType('audio/mpeg'));
+                console.log("Audio test - canPlayType MP3 alternative:", bgMusic.canPlayType('audio/mp3'));
+                console.log("Audio test - networkState:", bgMusic.networkState);
+                console.log("Audio test - error:", bgMusic.error);
+            }, 1000);
         }
         
         async function initVisitorCounter() {
