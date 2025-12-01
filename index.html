@@ -118,6 +118,28 @@
             transform: scale(1.05);
         }
         
+        /* Visitor Admin Button */
+        #admin-visitors-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        #admin-visitors-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        
         #main-container {
             flex: 1;
             display: flex;
@@ -1069,6 +1091,161 @@
             gap: 0.5rem;
         }
         
+        /* STILURI PENTRU FULGI DE ZĂPADĂ */
+        #snow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            animation-name: fall;
+            animation-timing-function: linear;
+            opacity: 0.8;
+            filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+        }
+
+        @keyframes fall {
+            to { 
+                transform: translateY(100vh) rotate(360deg); 
+                opacity: 0;
+            }
+        }
+
+        /* STILURI PENTRU BUTON MUIZCĂ */
+        #music-controls {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #music-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        #music-btn:hover {
+            transform: scale(1.1);
+            background: #7c3aed;
+        }
+
+        #music-btn.music-playing {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* STILURI PENTRU CONTOR VIZITATORI */
+        #visitor-counter {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        #visitor-count {
+            font-weight: 700;
+            color: #dc2626;
+            font-size: 16px;
+        }
+
+        /* STILURI PENTRU PANOU ADMIN VIZITATORI */
+        #admin-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            z-index: 2001;
+            max-width: 500px;
+            width: 90vw;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        #admin-panel h2 {
+            color: #1f2937;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #visitor-list {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        #visitor-list li {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        #visitor-list li:last-child {
+            border-bottom: none;
+        }
+
+        .close-admin-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            width: 100%;
+            font-weight: 600;
+        }
+
         /* On mobile, positioning adjustments */
         @media (max-width: 767px) {
             .connection-status {
@@ -1132,7 +1309,7 @@
                 font-size: 0.65rem;
             }
             
-            #info-btn {
+            #info-btn, #admin-visitors-btn {
                 font-size: 0.75rem;
                 padding: 0.3rem 0.6rem;
             }
@@ -1148,6 +1325,23 @@
             
             .time-selector-group {
                 grid-template-columns: 1fr;
+            }
+            
+            /* Ajustări pentru mobile - elemente noi */
+            #visitor-counter {
+                top: 70px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            #visitor-count {
+                font-size: 14px;
+            }
+            
+            #music-controls {
+                bottom: 90px;
+                right: 10px;
             }
         }
         
@@ -1183,6 +1377,9 @@
                 </div>
             </div>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button id="admin-visitors-btn" title="Visitor statistics">
+                    👑
+                </button>
                 <button id="info-btn" title="Usage instructions">
                     ❓ Info
                 </button>
@@ -1197,6 +1394,22 @@
     <div id="main-container">
         <div id="map-container">
             <div id="map"></div>
+        </div>
+        
+        <!-- ELEMENTE NOI ADĂUGATE -->
+        <div id="snow"></div>
+
+        <!-- Contor vizitatori -->
+        <div id="visitor-counter">
+            <span>👥 Visitors:</span>
+            <span id="visitor-count">0</span>
+        </div>
+
+        <!-- Buton muzică -->
+        <div id="music-controls">
+            <button id="music-btn" title="Toggle Christmas music">
+                🔇
+            </button>
         </div>
         
         <!-- LEFT BUTTONS -->
@@ -1341,6 +1554,20 @@
                                 <div class="step-description">The "Reset Visits" button clears all visited house markings</div>
                             </div>
                         </li>
+                        <li class="info-step">
+                            <div class="step-icon">👑</div>
+                            <div class="step-content">
+                                <div class="step-title">Visitor stats</div>
+                                <div class="step-description">The 👑 button shows visitor statistics (admin only)</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">🔊</div>
+                            <div class="step-content">
+                                <div class="step-title">Christmas music</div>
+                                <div class="step-description">The 🔊 button toggles background Christmas music</div>
+                            </div>
+                        </li>
                     </ol>
                 </div>
                 
@@ -1350,7 +1577,8 @@
                         • You can set a password when adding your house to be able to delete it later<br>
                         • Houses marked with ✅ have already been caroled<br>
                         • Share the map with friends using the 📱 button<br>
-                        • You can add houses anywhere in the world
+                        • You can add houses anywhere in the world<br>
+                        • Enjoy the snow animation and Christmas music! 🎄
                     </div>
                 </div>
             </div>
@@ -1561,6 +1789,21 @@
                 </button>
             </div>
         </div>
+
+        <!-- Visitor Admin Panel -->
+        <div id="admin-panel">
+            <h2><span>👑</span> Admin Panel - Visitor Log</h2>
+            <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">
+                Total unique visitors: <strong id="total-visitors">0</strong>
+            </p>
+            <ul id="visitor-list">
+                <!-- Lista vizitatori va fi populată aici -->
+            </ul>
+            <button class="close-admin-btn" onclick="closeAdminPanel()">Close Panel</button>
+        </div>
+        
+        <!-- Overlay pentru panoul admin -->
+        <div id="admin-panel-overlay" class="modal-overlay hidden"></div>
         
         <div id="loading">
             <div style="text-align: center;">
@@ -1569,6 +1812,12 @@
             </div>
         </div>
     </div>
+
+    <!-- Element audio pentru muzică -->
+    <audio id="bg-music" loop preload="metadata">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-christmas-jingle-226.mp3" type="audio/mpeg">
+    </audio>
 
     <!-- Firebase Scripts -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -1605,6 +1854,218 @@
             initFirebase();
             initDateSelector();
             initTimeSelectors();
+            setupNewFeatures();
+            initVisitorCounter();
+        }
+        
+        function setupNewFeatures() {
+            // Inițializează fulgii de zăpadă
+            initSnowflakes();
+            
+            // Inițializează controlul muzicii
+            initMusicControls();
+            
+            // Adaugă event listener pentru butonul admin vizitatori
+            document.getElementById('admin-visitors-btn').addEventListener('click', showAdminPanel);
+            
+            // Adaugă event listener pentru overlay-ul admin panel
+            document.getElementById('admin-panel-overlay').addEventListener('click', closeAdminPanel);
+        }
+        
+        function initSnowflakes() {
+            const snowContainer = document.getElementById('snow');
+            
+            function createSnowflake() {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                snowflake.style.left = Math.random() * 100 + 'vw';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+                snowflake.style.width = Math.random() * 6 + 4 + 'px';
+                snowflake.style.height = snowflake.style.width;
+                
+                // Adaugă variație în culoare (albastru deschis pentru unii fulgi)
+                if (Math.random() > 0.7) {
+                    snowflake.style.background = 'rgba(200, 230, 255, 0.9)';
+                }
+                
+                snowContainer.appendChild(snowflake);
+                
+                // Elimină fulgul după ce cade
+                setTimeout(() => {
+                    if (snowflake.parentNode === snowContainer) {
+                        snowContainer.removeChild(snowflake);
+                    }
+                }, 5000);
+            }
+            
+            // Creează fulgi la interval
+            setInterval(createSnowflake, 200);
+            
+            // Creează fulgi inițiali
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => createSnowflake(), Math.random() * 1000);
+            }
+        }
+        
+        function initMusicControls() {
+            const musicBtn = document.getElementById('music-btn');
+            const bgMusic = document.getElementById('bg-music');
+            
+            // Verifică starea salvată
+            const isMusicOn = localStorage.getItem('carolers_music') === 'true';
+            
+            if (isMusicOn) {
+                bgMusic.volume = 0.5; // Setează volumul la 50%
+                bgMusic.play().catch(e => console.log("Autoplay blocked:", e));
+                musicBtn.textContent = '🔊';
+                musicBtn.classList.add('music-playing');
+                musicBtn.title = 'Turn off Christmas music';
+            } else {
+                musicBtn.textContent = '🔇';
+                musicBtn.classList.remove('music-playing');
+                musicBtn.title = 'Turn on Christmas music';
+            }
+            
+            musicBtn.addEventListener('click', () => {
+                if (bgMusic.paused) {
+                    bgMusic.volume = 0.5;
+                    bgMusic.play().then(() => {
+                        musicBtn.textContent = '🔊';
+                        musicBtn.classList.add('music-playing');
+                        musicBtn.title = 'Turn off Christmas music';
+                        localStorage.setItem('carolers_music', 'true');
+                        showToast("Christmas music started! 🎶", "success");
+                    }).catch(e => {
+                        console.log("Play failed:", e);
+                        showToast("Click to play music manually", "info");
+                    });
+                } else {
+                    bgMusic.pause();
+                    musicBtn.textContent = '🔇';
+                    musicBtn.classList.remove('music-playing');
+                    musicBtn.title = 'Turn on Christmas music';
+                    localStorage.setItem('carolers_music', 'false');
+                    showToast("Music paused", "info");
+                }
+            });
+            
+            // Încearcă auto-play cu interacțiunea utilizatorului
+            document.addEventListener('click', function initMusicOnFirstClick() {
+                if (bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
+                    bgMusic.play().catch(e => console.log("Autoplay on click failed:", e));
+                }
+                document.removeEventListener('click', initMusicOnFirstClick);
+            });
+        }
+        
+        async function initVisitorCounter() {
+            try {
+                // Încarcă contorul din localStorage ca fallback
+                let visitorCount = localStorage.getItem('carolers_visitor_count') || '0';
+                
+                if (isConnected) {
+                    // Dacă suntem conectați la Firebase, folosim Firebase
+                    const database = firebase.database();
+                    const visitorRef = database.ref('visitors');
+                    
+                    // Adaugă vizitator curent
+                    const visitorData = {
+                        timestamp: Date.now(),
+                        userAgent: navigator.userAgent.substring(0, 100),
+                        date: new Date().toISOString()
+                    };
+                    
+                    await visitorRef.push(visitorData);
+                    
+                    // Numără toți vizitorii
+                    const snapshot = await visitorRef.once('value');
+                    visitorCount = snapshot.numChildren().toString();
+                    
+                    // Salvează în localStorage pentru backup
+                    localStorage.setItem('carolers_visitor_count', visitorCount);
+                } else {
+                    // Fallback la localStorage
+                    let count = parseInt(visitorCount) + 1;
+                    localStorage.setItem('carolers_visitor_count', count.toString());
+                    visitorCount = count.toString();
+                }
+                
+                // Actualizează afișajul
+                document.getElementById('visitor-count').textContent = visitorCount;
+                
+            } catch (error) {
+                console.error('Error initializing visitor counter:', error);
+                // Fallback la localStorage
+                let count = parseInt(localStorage.getItem('carolers_visitor_count') || '0') + 1;
+                localStorage.setItem('carolers_visitor_count', count.toString());
+                document.getElementById('visitor-count').textContent = count.toString();
+            }
+        }
+        
+        async function showAdminPanel() {
+            const password = prompt("Enter admin password:");
+            
+            if (password === ADMIN_PASSWORD) {
+                try {
+                    const visitorList = document.getElementById('visitor-list');
+                    const totalVisitors = document.getElementById('total-visitors');
+                    
+                    if (isConnected) {
+                        const database = firebase.database();
+                        const visitorRef = database.ref('visitors');
+                        const snapshot = await visitorRef.once('value');
+                        
+                        const visitors = [];
+                        snapshot.forEach((child) => {
+                            visitors.push({
+                                id: child.key,
+                                ...child.val()
+                            });
+                        });
+                        
+                        // Sortează după dată (cele mai recente primele)
+                        visitors.sort((a, b) => b.timestamp - a.timestamp);
+                        
+                        totalVisitors.textContent = visitors.length;
+                        visitorList.innerHTML = '';
+                        
+                        visitors.forEach(visitor => {
+                            const li = document.createElement('li');
+                            const date = new Date(visitor.timestamp);
+                            li.textContent = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                            visitorList.appendChild(li);
+                        });
+                    } else {
+                        // Fallback pentru offline
+                        const count = localStorage.getItem('carolers_visitor_count') || '0';
+                        
+                        totalVisitors.textContent = count;
+                        visitorList.innerHTML = `
+                            <li>Offline mode - showing total count only</li>
+                            <li>Total unique visitors: ${count}</li>
+                            <li>Last update: ${new Date().toLocaleString()}</li>
+                        `;
+                    }
+                    
+                    // Afișează panoul
+                    document.getElementById('admin-panel').style.display = 'block';
+                    document.getElementById('admin-panel-overlay').classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                    
+                } catch (error) {
+                    console.error('Error loading visitor data:', error);
+                    showError('Could not load visitor data: ' + error.message);
+                }
+            } else if (password !== null) {
+                showError('Incorrect password');
+            }
+        }
+        
+        function closeAdminPanel() {
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('admin-panel-overlay').classList.add('hidden');
+            document.body.style.overflow = '';
         }
         
         function initDateSelector() {
@@ -2454,6 +2915,22 @@
         
         function closeInfoModal() {
             hideModal('info-modal');
+        }
+        
+        function showToast(message, type = 'info') {
+            // Elimină toast-urile vechi
+            const oldToasts = document.querySelectorAll('.toast');
+            oldToasts.forEach(toast => toast.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Elimină toast-ul după 3 secunde
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
     </script>
 </body>
