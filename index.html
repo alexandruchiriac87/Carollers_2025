@@ -2139,18 +2139,25 @@
                 visitors.forEach(visitor => {
                     const country = visitor.country || 'Unknown';
                     const city = visitor.city || 'Unknown';
-                    const visitDate = new Date(visitor.lastVisit).toLocaleDateString();
                     
                     // Statistici pe țări
                     countryStats[country] = (countryStats[country] || 0) + 1;
                     
-                    // Statistici pe orașe (doar pentru top 10)
+                    // Statistici pe orașe (TOATE, nu doar top 10)
                     if (city !== 'Unknown') {
                         cityStats[city] = (cityStats[city] || 0) + 1;
                     }
                     
-                    // Statistici zilnice (ultimele 30 de zile)
-                    dailyStats[visitDate] = (dailyStats[visitDate] || 0) + 1;
+                    // Statistici zilnice - FIX pentru problema formatului datelor
+                    const visitDate = new Date(visitor.lastVisit || visitor.timestamp || Date.now());
+                    // Formatează data corect ca "Dec 25, 2024" pentru a evita confuzia lună/zi
+                    const formattedDate = visitDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    });
+                    
+                    dailyStats[formattedDate] = (dailyStats[formattedDate] || 0) + 1;
                 });
                 
                 // Creează HTML pentru statistici
@@ -2163,27 +2170,33 @@
                         </div>
                 `;
                 
-                // Statistici pe țări
+                // Statistici pe țări - TOATE țările, sortate
                 const sortedCountries = Object.entries(countryStats)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 15); // Top 15 țări
+                    .sort((a, b) => b[1] - a[1]);
                 
                 statsHtml += `
                     <div class="stat-card">
                         <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
                             <span style="font-size: 1.2em;">📍</span>
-                            Top Countries
+                            All Countries (${sortedCountries.length})
                         </h4>
+                        <div style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
                 `;
                 
                 sortedCountries.forEach(([country, count]) => {
                     const percentage = (count / visitors.length * 100).toFixed(1);
                     const barWidth = Math.min(100, (percentage * 1.5));
                     
+                    // Obține codul țării pentru steag
+                    const countryCode = getCountryCode(country);
+                    const flag = countryCode ? getFlagEmoji(countryCode) : '🌐';
+                    
                     statsHtml += `
                         <div style="margin-bottom: 0.75rem;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                                <span style="font-weight: 500;">${country}</span>
+                                <span style="font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                                    ${flag} ${country}
+                                </span>
                                 <span style="font-weight: 600; color: #dc2626;">${count} (${percentage}%)</span>
                             </div>
                             <div style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
@@ -2193,110 +2206,243 @@
                     `;
                 });
                 
-                statsHtml += '</div>';
+                statsHtml += `
+                        </div>
+                    </div>
+                `;
                 
-                // Statistici pe orașe (top 10)
+                // Statistici pe orașe - TOATE orașele, sortate
                 const sortedCities = Object.entries(cityStats)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10);
+                    .sort((a, b) => b[1] - a[1]);
                 
                 if (sortedCities.length > 0) {
                     statsHtml += `
                         <div class="stat-card">
                             <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
                                 <span style="font-size: 1.2em;">🏙️</span>
-                                Top Cities
+                                All Cities (${sortedCities.length})
                             </h4>
+                            <div style="max-height: 300px; overflow-y: auto;">
                     `;
                     
                     sortedCities.forEach(([city, count]) => {
                         const percentage = (count / visitors.length * 100).toFixed(1);
                         
                         statsHtml += `
-                            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
-                                <span>${city}</span>
-                                <span style="font-weight: 600;">${count}</span>
+                            <div style="display: flex; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid #e5e7eb; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-size: 1.2em;">🏘️</span>
+                                    <div>
+                                        <div style="font-weight: 500;">${city}</div>
+                                        <div style="font-size: 0.75rem; color: #6b7280;">${percentage}% of visitors</div>
+                                    </div>
+                                </div>
+                                <span style="font-weight: 600; background: #dcfce7; padding: 4px 8px; border-radius: 9999px; font-size: 0.875rem;">${count}</span>
                             </div>
                         `;
                     });
                     
-                    statsHtml += '</div>';
+                    statsHtml += `
+                            </div>
+                        </div>
+                    `;
                 }
                 
-                // Distribuție temporală (ultimele 7 zile)
+                // Distribuție temporală - ultimele 14 zile (pentru o vedere mai bună)
                 const sortedDates = Object.entries(dailyStats)
-                    .sort((a, b) => new Date(a[0]) - new Date(b[0]))
-                    .slice(-7); // Ultimele 7 zile
+                    .sort((a, b) => {
+                        // Sortează cronologic
+                        const dateA = new Date(a[0]);
+                        const dateB = new Date(b[0]);
+                        return dateB - dateA; // Cele mai recente primele
+                    })
+                    .slice(0, 14); // Ultimele 14 zile
                 
                 if (sortedDates.length > 0) {
+                    // Pentru afișare, le sortăm invers (cele mai vechi primele)
+                    const displayDates = [...sortedDates].reverse();
+                    
                     statsHtml += `
                         <div class="stat-card">
                             <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
                                 <span style="font-size: 1.2em;">📅</span>
-                                Last 7 Days Activity
+                                Last 14 Days Activity
                             </h4>
+                            <div style="display: flex; height: 200px; align-items: flex-end; gap: 4px; border-bottom: 1px solid #e5e7eb; padding-bottom: 30px;">
                     `;
                     
-                    const maxVisits = Math.max(...sortedDates.map(([_, count]) => count));
+                    const maxVisits = Math.max(...displayDates.map(([_, count]) => count));
                     
-                    sortedDates.forEach(([date, count]) => {
-                        const barHeight = (count / maxVisits * 60);
-                        const shortDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    displayDates.forEach(([date, count]) => {
+                        const barHeight = maxVisits > 0 ? (count / maxVisits * 120) : 0;
+                        // Formatează data pentru afișare scurtă
+                        const dateObj = new Date(date);
+                        const shortDate = dateObj.toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
                         
                         statsHtml += `
-                            <div style="display: inline-block; width: calc(100% / ${sortedDates.length}); padding: 0 0.25rem; text-align: center;">
-                                <div style="position: relative; height: 70px;">
-                                    <div style="position: absolute; bottom: 0; width: 80%; left: 10%; background: linear-gradient(to top, #dc2626, #16a34a); height: ${barHeight}px; border-radius: 4px 4px 0 0;"></div>
-                                    <div style="position: absolute; bottom: -25px; width: 100%; text-align: center; font-size: 0.75rem; color: #6b7280;">${shortDate}</div>
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;">
+                                <div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
+                                    <div 
+                                        style="
+                                            width: 80%; 
+                                            margin: 0 auto;
+                                            background: linear-gradient(to top, #dc2626, #16a34a); 
+                                            border-radius: 4px 4px 0 0;
+                                            transition: all 0.3s ease;
+                                            cursor: pointer;
+                                        "
+                                        title="${date}: ${count} visitors"
+                                        onmouseover="this.style.transform='scale(1.1)'; this.style.background='linear-gradient(to top, #ef4444, #22c55e)';"
+                                        onmouseout="this.style.transform='scale(1)'; this.style.background='linear-gradient(to top, #dc2626, #16a34a)';"
+                                        onclick="showDateDetails('${date}', ${count})"
+                                    >
+                                        <div style="height: ${barHeight}px;"></div>
+                                    </div>
                                 </div>
-                                <div style="margin-top: 30px; font-weight: 600; color: #1f2937;">${count}</div>
+                                <div style="margin-top: 8px; font-size: 0.75rem; color: #6b7280; text-align: center;">
+                                    <div>${shortDate}</div>
+                                    <div style="font-weight: 600; color: #1f2937; margin-top: 2px;">${count}</div>
+                                </div>
                             </div>
                         `;
                     });
                     
-                    statsHtml += '</div>';
+                    statsHtml += `
+                            </div>
+                            <div style="margin-top: 1rem; font-size: 0.75rem; color: #6b7280; text-align: center;">
+                                Click on any bar to see details
+                            </div>
+                        </div>
+                    `;
                 }
                 
-                // Dispozitive/browsers (simplificat)
+                // Dispozitive/browsers (detaliere completă)
                 const deviceStats = {
                     'Mobile': 0,
                     'Desktop': 0,
                     'Tablet': 0
                 };
                 
+                const browserStats = {};
+                const osStats = {};
+                
                 visitors.forEach(visitor => {
-                    const ua = visitor.userAgent || '';
+                    const ua = visitor.userAgent || navigator.userAgent;
+                    
+                    // Detect device
                     if (/mobile/i.test(ua)) deviceStats['Mobile']++;
                     else if (/tablet/i.test(ua)) deviceStats['Tablet']++;
                     else deviceStats['Desktop']++;
+                    
+                    // Detect browser
+                    if (/chrome/i.test(ua) && !/edge/i.test(ua)) browserStats['Chrome'] = (browserStats['Chrome'] || 0) + 1;
+                    else if (/firefox/i.test(ua)) browserStats['Firefox'] = (browserStats['Firefox'] || 0) + 1;
+                    else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browserStats['Safari'] = (browserStats['Safari'] || 0) + 1;
+                    else if (/edge/i.test(ua)) browserStats['Edge'] = (browserStats['Edge'] || 0) + 1;
+                    else if (/opera/i.test(ua)) browserStats['Opera'] = (browserStats['Opera'] || 0) + 1;
+                    else browserStats['Other'] = (browserStats['Other'] || 0) + 1;
+                    
+                    // Detect OS
+                    if (/windows/i.test(ua)) osStats['Windows'] = (osStats['Windows'] || 0) + 1;
+                    else if (/macintosh/i.test(ua) || /mac os/i.test(ua)) osStats['macOS'] = (osStats['macOS'] || 0) + 1;
+                    else if (/linux/i.test(ua)) osStats['Linux'] = (osStats['Linux'] || 0) + 1;
+                    else if (/android/i.test(ua)) osStats['Android'] = (osStats['Android'] || 0) + 1;
+                    else if (/iphone/i.test(ua) || /ipad/i.test(ua)) osStats['iOS'] = (osStats['iOS'] || 0) + 1;
+                    else osStats['Other'] = (osStats['Other'] || 0) + 1;
                 });
+                
+                // Sort browser and OS stats
+                const sortedBrowsers = Object.entries(browserStats).sort((a, b) => b[1] - a[1]);
+                const sortedOS = Object.entries(osStats).sort((a, b) => b[1] - a[1]);
                 
                 statsHtml += `
                     <div class="stat-card">
                         <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 1.2em;">📱</span>
-                            Devices Used
+                            <span style="font-size: 1.2em;">💻</span>
+                            Devices & Browsers
                         </h4>
-                        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
                 `;
                 
+                // Device stats
                 Object.entries(deviceStats).forEach(([device, count]) => {
                     const percentage = (count / visitors.length * 100).toFixed(1);
                     
                     statsHtml += `
-                        <div style="flex: 1; min-width: 100px; text-align: center; padding: 0.75rem; background: #f8fafc; border-radius: 0.5rem;">
-                            <div style="font-size: 1.5em; margin-bottom: 0.5rem;">${
+                        <div style="flex: 1; min-width: 100px; text-align: center; padding: 1rem; background: #f8fafc; border-radius: 0.75rem;">
+                            <div style="font-size: 2em; margin-bottom: 0.5rem;">${
                                 device === 'Mobile' ? '📱' : 
                                 device === 'Tablet' ? '📟' : '💻'
                             }</div>
-                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${device}</div>
+                            <div style="font-weight: 600; margin-bottom: 0.25rem; color: #1f2937;">${device}</div>
                             <div style="font-size: 0.875rem; color: #6b7280;">${percentage}%</div>
-                            <div style="font-size: 0.75rem; color: #dc2626; font-weight: 600;">${count}</div>
+                            <div style="font-size: 0.875rem; color: #dc2626; font-weight: 600; margin-top: 0.25rem;">${count}</div>
                         </div>
                     `;
                 });
                 
                 statsHtml += `
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                            <h5 style="margin-bottom: 0.75rem; color: #4b5563; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>🌐</span>
+                                Browsers
+                            </h5>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                `;
+                
+                sortedBrowsers.forEach(([browser, count]) => {
+                    const percentage = (count / visitors.length * 100).toFixed(1);
+                    const icon = browser === 'Chrome' ? '🟡' : 
+                                browser === 'Firefox' ? '🦊' : 
+                                browser === 'Safari' ? '🔵' : 
+                                browser === 'Edge' ? '🔷' : 
+                                browser === 'Opera' ? '🔴' : '🌐';
+                    
+                    statsHtml += `
+                        <div style="flex: 1; min-width: 80px; text-align: center; padding: 0.75rem; background: #f1f5f9; border-radius: 0.5rem;">
+                            <div style="font-size: 1.5em; margin-bottom: 0.25rem;">${icon}</div>
+                            <div style="font-size: 0.75rem; font-weight: 500; color: #1f2937;">${browser}</div>
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-top: 2px;">${percentage}%</div>
+                        </div>
+                    `;
+                });
+                
+                statsHtml += `
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                            <h5 style="margin-bottom: 0.75rem; color: #4b5563; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>⚙️</span>
+                                Operating Systems
+                            </h5>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                `;
+                
+                sortedOS.forEach(([os, count]) => {
+                    const percentage = (count / visitors.length * 100).toFixed(1);
+                    const icon = os === 'Windows' ? '🪟' : 
+                                os === 'macOS' ? '🍎' : 
+                                os === 'Linux' ? '🐧' : 
+                                os === 'Android' ? '🤖' : 
+                                os === 'iOS' ? '📱' : '💻';
+                    
+                    statsHtml += `
+                        <div style="flex: 1; min-width: 80px; text-align: center; padding: 0.75rem; background: #f1f5f9; border-radius: 0.5rem;">
+                            <div style="font-size: 1.5em; margin-bottom: 0.25rem;">${icon}</div>
+                            <div style="font-size: 0.75rem; font-weight: 500; color: #1f2937;">${os}</div>
+                            <div style="font-size: 0.7rem; color: #6b7280; margin-top: 2px;">${percentage}%</div>
+                        </div>
+                    `;
+                });
+                
+                statsHtml += `
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2304,6 +2450,17 @@
                 // Informații tehnice pentru admin
                 const uniqueCountries = Object.keys(countryStats).filter(c => c !== 'Unknown').length;
                 const uniqueCities = Object.keys(cityStats).filter(c => c !== 'Unknown').length;
+                const totalVisits = visitors.reduce((sum, visitor) => sum + (visitor.visits || 1), 0);
+                
+                // Găsește cea mai populară oră a zilei
+                const hourStats = Array(24).fill(0);
+                visitors.forEach(visitor => {
+                    const visitDate = new Date(visitor.lastVisit || visitor.timestamp || Date.now());
+                    const hour = visitDate.getHours();
+                    hourStats[hour] = (hourStats[hour] || 0) + 1;
+                });
+                
+                const mostActiveHour = hourStats.indexOf(Math.max(...hourStats));
                 
                 statsHtml += `
                     <div class="stat-card" style="background: #f0f9ff; border: 1px solid #0ea5e9;">
@@ -2312,19 +2469,38 @@
                             Technical Summary
                         </h4>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                            <div style="text-align: center; padding: 0.5rem;">
-                                <div style="font-size: 1.25rem; font-weight: bold; color: #dc2626;">${uniqueCountries}</div>
+                            <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #dc2626;">${uniqueCountries}</div>
                                 <div style="font-size: 0.75rem; color: #6b7280;">Unique Countries</div>
                             </div>
-                            <div style="text-align: center; padding: 0.5rem;">
-                                <div style="font-size: 1.25rem; font-weight: bold; color: #16a34a;">${uniqueCities}</div>
+                            <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #16a34a;">${uniqueCities}</div>
                                 <div style="font-size: 0.75rem; color: #6b7280;">Unique Cities</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #8b5cf6;">${totalVisits}</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">Total Visits</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <div style="font-size: 1.5rem; font-weight: bold; color: #f59e0b;">${mostActiveHour}:00</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">Most Active Hour</div>
                             </div>
                         </div>
                         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
-                            <p style="font-size: 0.75rem; color: #6b7280; text-align: center;">
-                                Data updated: ${new Date().toLocaleString()}
-                            </p>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-size: 0.75rem; color: #6b7280;">First Visitor</div>
+                                    <div style="font-size: 0.875rem; font-weight: 500; color: #1f2937;">
+                                        ${new Date(Math.min(...visitors.map(v => v.firstVisit || v.timestamp || Date.now()))).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.75rem; color: #6b7280;">Last Updated</div>
+                                    <div style="font-size: 0.875rem; font-weight: 500; color: #1f2937;">
+                                        ${new Date().toLocaleString()}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2336,14 +2512,14 @@
                 statsModal.className = 'modal modal-view';
                 statsModal.id = 'stats-modal';
                 statsModal.style.maxWidth = '600px';
-                statsModal.style.maxHeight = '80vh';
+                statsModal.style.maxHeight = '85vh';
                 statsModal.style.overflowY = 'auto';
                 
                 statsModal.innerHTML = `
                     <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 1;">
                         <h3 class="modal-title">
                             <span style="font-size: 1.5rem;">🌍</span>
-                            Admin Statistics
+                            Admin Statistics Dashboard
                         </h3>
                         <button class="close-btn" onclick="document.getElementById('stats-modal').remove(); document.getElementById('modal-overlay').classList.add('hidden');">×</button>
                     </div>
@@ -2373,165 +2549,6 @@
                     statsBtn.disabled = false;
                 }
             }
-        }
-        
-        function initDateSelector() {
-            const dateSelect = document.getElementById('schedule-date');
-            dateSelect.innerHTML = '<option value="">-- Select date --</option>';
-            
-            const currentYear = new Date().getFullYear();
-            const currentDate = new Date();
-            
-            for (let day = 1; day <= 31; day++) {
-                const date = new Date(currentYear, 11, day);
-                
-                if (date >= currentDate || date.getDate() === currentDate.getDate()) {
-                    const formattedDate = date.toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short'
-                    });
-                    const option = document.createElement('option');
-                    option.value = formattedDate;
-                    option.textContent = formattedDate;
-                    dateSelect.appendChild(option);
-                }
-            }
-        }
-        
-        function initTimeSelectors() {
-            const hourSelectors = ['start-hour', 'end-hour'];
-            hourSelectors.forEach(id => {
-                const select = document.getElementById(id);
-                select.innerHTML = '<option value="">Hour</option>';
-                for (let hour = 0; hour < 24; hour++) {
-                    const option = document.createElement('option');
-                    option.value = hour.toString().padStart(2, '0');
-                    option.textContent = hour.toString().padStart(2, '0');
-                    select.appendChild(option);
-                }
-            });
-            
-            const minuteSelectors = ['start-minute', 'end-minute'];
-            minuteSelectors.forEach(id => {
-                const select = document.getElementById(id);
-                select.innerHTML = '<option value="">Minute</option>';
-                for (let minute = 0; minute < 60; minute += 5) {
-                    const option = document.createElement('option');
-                    option.value = minute.toString().padStart(2, '0');
-                    option.textContent = minute.toString().padStart(2, '0');
-                    select.appendChild(option);
-                }
-            });
-            
-            const timeSelectors = ['start-hour', 'start-minute', 'end-hour', 'end-minute', 'schedule-date'];
-            timeSelectors.forEach(id => {
-                document.getElementById(id).addEventListener('change', function() {
-                    updateScheduleDisplay();
-                    validateTimes();
-                });
-            });
-        }
-        
-        function getSelectedTime(startOrEnd) {
-            const hour = document.getElementById(`${startOrEnd}-hour`).value;
-            const minute = document.getElementById(`${startOrEnd}-minute`).value;
-            
-            if (hour && minute) {
-                return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-            }
-            return '';
-        }
-        
-        function updateScheduleDisplay() {
-            const date = document.getElementById('schedule-date').value;
-            const startTime = getSelectedTime('start');
-            const endTime = getSelectedTime('end');
-            
-            const display = document.getElementById('schedule-display');
-            const scheduleText = document.getElementById('schedule-text');
-            
-            let scheduleString = '';
-            
-            if (date) {
-                scheduleString += date;
-                
-                if (startTime && endTime) {
-                    scheduleString += `, ${startTime}-${endTime}`;
-                } else if (startTime) {
-                    scheduleString += `, from ${startTime}`;
-                } else if (endTime) {
-                    scheduleString += `, until ${endTime}`;
-                }
-            }
-            
-            if (scheduleString) {
-                scheduleText.textContent = scheduleString;
-                display.classList.remove('hidden');
-            } else {
-                display.classList.add('hidden');
-            }
-        }
-        
-        function getScheduleValue() {
-            const date = document.getElementById('schedule-date').value;
-            const startTime = getSelectedTime('start');
-            const endTime = getSelectedTime('end');
-            
-            if (!date && !startTime && !endTime) {
-                return '';
-            }
-            
-            let scheduleString = '';
-            
-            if (date) {
-                scheduleString += date;
-            }
-            
-            if (startTime && endTime) {
-                if (scheduleString) {
-                    scheduleString += `, ${startTime}-${endTime}`;
-                } else {
-                    scheduleString = `${startTime}-${endTime}`;
-                }
-            } else if (startTime) {
-                if (scheduleString) {
-                    scheduleString += `, from ${startTime}`;
-                } else {
-                    scheduleString = `From ${startTime}`;
-                }
-            } else if (endTime) {
-                if (scheduleString) {
-                    scheduleString += `, until ${endTime}`;
-                } else {
-                    scheduleString = `Until ${endTime}`;
-                }
-            }
-            
-            return scheduleString;
-        }
-        
-        function validateTimes() {
-            const startTime = getSelectedTime('start');
-            const endTime = getSelectedTime('end');
-            
-            if (startTime && endTime) {
-                const startMinutes = timeToMinutes(startTime);
-                const endMinutes = timeToMinutes(endTime);
-                
-                if (endMinutes <= startMinutes) {
-                    showError('End time must be after start time!');
-                    document.getElementById('end-hour').value = '';
-                    document.getElementById('end-minute').value = '';
-                    document.getElementById('schedule-display').classList.add('hidden');
-                    return false;
-                }
-            }
-            return true;
-        }
-        
-        function timeToMinutes(time) {
-            const [hours, minutes] = time.split(':').map(Number);
-            return hours * 60 + minutes;
         }
         
         function setupEventListeners() {
@@ -3227,6 +3244,236 @@
             setTimeout(() => {
                 toast.remove();
             }, 3000);
+        }
+        
+        function initDateSelector() {
+            const dateSelect = document.getElementById('schedule-date');
+            dateSelect.innerHTML = '<option value="">-- Select date --</option>';
+            
+            const currentYear = new Date().getFullYear();
+            const currentDate = new Date();
+            
+            for (let day = 1; day <= 31; day++) {
+                const date = new Date(currentYear, 11, day);
+                
+                if (date >= currentDate || date.getDate() === currentDate.getDate()) {
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        day: 'numeric',
+                        month: 'short'
+                    });
+                    const option = document.createElement('option');
+                    option.value = formattedDate;
+                    option.textContent = formattedDate;
+                    dateSelect.appendChild(option);
+                }
+            }
+        }
+        
+        function initTimeSelectors() {
+            const hourSelectors = ['start-hour', 'end-hour'];
+            hourSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Hour</option>';
+                for (let hour = 0; hour < 24; hour++) {
+                    const option = document.createElement('option');
+                    option.value = hour.toString().padStart(2, '0');
+                    option.textContent = hour.toString().padStart(2, '0');
+                    select.appendChild(option);
+                }
+            });
+            
+            const minuteSelectors = ['start-minute', 'end-minute'];
+            minuteSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Minute</option>';
+                for (let minute = 0; minute < 60; minute += 5) {
+                    const option = document.createElement('option');
+                    option.value = minute.toString().padStart(2, '0');
+                    option.textContent = minute.toString().padStart(2, '0');
+                    select.appendChild(option);
+                }
+            });
+            
+            const timeSelectors = ['start-hour', 'start-minute', 'end-hour', 'end-minute', 'schedule-date'];
+            timeSelectors.forEach(id => {
+                document.getElementById(id).addEventListener('change', function() {
+                    updateScheduleDisplay();
+                    validateTimes();
+                });
+            });
+        }
+        
+        function getSelectedTime(startOrEnd) {
+            const hour = document.getElementById(`${startOrEnd}-hour`).value;
+            const minute = document.getElementById(`${startOrEnd}-minute`).value;
+            
+            if (hour && minute) {
+                return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+            }
+            return '';
+        }
+        
+        function updateScheduleDisplay() {
+            const date = document.getElementById('schedule-date').value;
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            const display = document.getElementById('schedule-display');
+            const scheduleText = document.getElementById('schedule-text');
+            
+            let scheduleString = '';
+            
+            if (date) {
+                scheduleString += date;
+                
+                if (startTime && endTime) {
+                    scheduleString += `, ${startTime}-${endTime}`;
+                } else if (startTime) {
+                    scheduleString += `, from ${startTime}`;
+                } else if (endTime) {
+                    scheduleString += `, until ${endTime}`;
+                }
+            }
+            
+            if (scheduleString) {
+                scheduleText.textContent = scheduleString;
+                display.classList.remove('hidden');
+            } else {
+                display.classList.add('hidden');
+            }
+        }
+        
+        function getScheduleValue() {
+            const date = document.getElementById('schedule-date').value;
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            if (!date && !startTime && !endTime) {
+                return '';
+            }
+            
+            let scheduleString = '';
+            
+            if (date) {
+                scheduleString += date;
+            }
+            
+            if (startTime && endTime) {
+                if (scheduleString) {
+                    scheduleString += `, ${startTime}-${endTime}`;
+                } else {
+                    scheduleString = `${startTime}-${endTime}`;
+                }
+            } else if (startTime) {
+                if (scheduleString) {
+                    scheduleString += `, from ${startTime}`;
+                } else {
+                    scheduleString = `From ${startTime}`;
+                }
+            } else if (endTime) {
+                if (scheduleString) {
+                    scheduleString += `, until ${endTime}`;
+                } else {
+                    scheduleString = `Until ${endTime}`;
+                }
+            }
+            
+            return scheduleString;
+        }
+        
+        function validateTimes() {
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            if (startTime && endTime) {
+                const startMinutes = timeToMinutes(startTime);
+                const endMinutes = timeToMinutes(endTime);
+                
+                if (endMinutes <= startMinutes) {
+                    showError('End time must be after start time!');
+                    document.getElementById('end-hour').value = '';
+                    document.getElementById('end-minute').value = '';
+                    document.getElementById('schedule-display').classList.add('hidden');
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        function timeToMinutes(time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+        
+        // Helper functions for statistics
+        function getCountryCode(countryName) {
+            // Map country names to country codes (simplified version)
+            const countryMap = {
+                'United States': 'US',
+                'United Kingdom': 'GB',
+                'Canada': 'CA',
+                'Australia': 'AU',
+                'Germany': 'DE',
+                'France': 'FR',
+                'Italy': 'IT',
+                'Spain': 'ES',
+                'Japan': 'JP',
+                'China': 'CN',
+                'India': 'IN',
+                'Brazil': 'BR',
+                'Mexico': 'MX',
+                'Netherlands': 'NL',
+                'Switzerland': 'CH',
+                'Sweden': 'SE',
+                'Norway': 'NO',
+                'Denmark': 'DK',
+                'Finland': 'FI',
+                'Romania': 'RO',
+                'Poland': 'PL',
+                'Russia': 'RU',
+                'Ukraine': 'UA',
+                'Turkey': 'TR',
+                'Greece': 'GR',
+                'Portugal': 'PT',
+                'Belgium': 'BE',
+                'Austria': 'AT',
+                'Ireland': 'IE',
+                'New Zealand': 'NZ',
+                'South Africa': 'ZA',
+                'Egypt': 'EG',
+                'Israel': 'IL',
+                'Saudi Arabia': 'SA',
+                'United Arab Emirates': 'AE',
+                'Singapore': 'SG',
+                'Malaysia': 'MY',
+                'Indonesia': 'ID',
+                'Thailand': 'TH',
+                'Vietnam': 'VN',
+                'Philippines': 'PH',
+                'South Korea': 'KR',
+                'Taiwan': 'TW',
+                'Hong Kong': 'HK'
+            };
+            
+            return countryMap[countryName] || null;
+        }
+        
+        function getFlagEmoji(countryCode) {
+            if (!countryCode) return '🌐';
+            
+            try {
+                // Convert country code to regional indicator symbols
+                const codePoints = countryCode.toUpperCase().split('').map(char => 
+                    127397 + char.charCodeAt(0)
+                );
+                return String.fromCodePoint(...codePoints);
+            } catch (e) {
+                return '🌐';
+            }
+        }
+        
+        function showDateDetails(date, count) {
+            showToast(`📅 ${date}: ${count} visitors`, "info");
         }
     </script>
 </body>
