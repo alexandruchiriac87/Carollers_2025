@@ -1,1728 +1,3233 @@
-// CONFIGURAȚIE DIN FIȘIER EXTERN
-const ADMIN_PASSWORD = window.APP_CONFIG.ADMIN_PASSWORD;
-const FIREBASE_CONFIG = window.APP_CONFIG.FIREBASE_CONFIG;
-const ICONS = ['🎄', '🎅', '⭐', '🔔', '🎁', '❄️', '🕯️', '🦌', '🧦', '🍪', '🤶', '✨'];
-
-// Default center coordinates - Bucharest
-const DEFAULT_CENTER = [44.47729443095744, 26.074460492097725];
-
-let map;
-let markers = [];
-let pins = [];
-let selectedIcon = '🎄';
-let clickedLocation = null;
-let selectedPin = null;
-let isConnected = false;
-let userLocationMarker = null;
-let isAdmin = false;
-let visitedHouses = JSON.parse(localStorage.getItem('visitedHouses') || '{}');
-let lastClickTime = 0;
-let clickTimer = null;
-let snowInterval = null;
-let snowEnabled = true;
-let visitorId = null;
-
-document.addEventListener('DOMContentLoaded', init);
-
-function init() {
-    initMap();
-    initIconGrid();
-    setupEventListeners();
-    initFirebase();
-    initDateSelector();
-    initTimeSelectors();
-    setupNewFeatures();
-    initVisitorCounter();
-}
-
-function setupNewFeatures() {
-    initSnowflakes();
-    initMusicControls();
-    initSnowButton();
-}
-
-function initSnowflakes() {
-    const snowContainer = document.getElementById('snow');
-    snowEnabled = localStorage.getItem('carolers_snow') !== 'false';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Carolers - Global Map</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     
-    function createSnowflake() {
-        if (!snowEnabled) return;
-        
-        const snowflake = document.createElement('div');
-        snowflake.classList.add('snowflake');
-        snowflake.style.left = Math.random() * 100 + 'vw';
-        snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
-        snowflake.style.opacity = Math.random() * 0.7 + 0.3;
-        snowflake.style.width = Math.random() * 8 + 4 + 'px';
-        snowflake.style.height = snowflake.style.width;
-        
-        if (Math.random() > 0.7) {
-            snowflake.style.background = 'rgba(200, 230, 255, 0.9)';
+    <!-- ÎNCĂRCĂ CONFIGURAȚIA -->
+    <script src="config.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        snowContainer.appendChild(snowflake);
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
         
-        setTimeout(() => {
-            if (snowflake.parentNode === snowContainer) {
-                snowContainer.removeChild(snowflake);
+        #header {
+            background: linear-gradient(to right, #dc2626, #16a34a);
+            color: white;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+        
+        #header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        #header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        #header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        #header p {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            display: none;
+        }
+        
+        #pin-count {
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 0.8rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+        }
+        
+        #pin-count:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        
+        #pin-count-main {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        
+        #pin-count-visited {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        /* Info/Help Button */
+        #info-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        #info-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        
+        #main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #map-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* RIGHT BUTTON GROUP - PC & MOBILE */
+        #right-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        /* ADD HOUSE BUTTON - RIGHT */
+        #add-btn-right {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #dc2626, #16a34a);
+            color: white;
+            border: none;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #add-btn-right:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+
+        /* SHARE BUTTON - RIGHT */
+        #share-btn-right {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #25d366;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #share-btn-right:hover {
+            transform: scale(1.1);
+            background: #128C7E;
+        }
+        
+        /* LEFT BUTTON GROUP */
+        #left-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        /* CENTERING BUTTON LEFT */
+        #center-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #center-btn:hover {
+            transform: scale(1.1);
+            background: #7c3aed;
+        }
+
+        /* GPS BUTTON LEFT */
+        #gps-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #10b981;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        #gps-btn:hover {
+            transform: scale(1.1);
+            background: #059669;
+        }
+        
+        #gps-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #gps-btn.loading {
+            background: #f59e0b;
+        }
+
+        /* MODAL BUTTON STYLES */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #dc2626, #16a34a);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: scale(1.05);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+        
+        .btn-secondary:hover {
+            background: #d1d5db;
+            transform: scale(1.05);
+        }
+        
+        .modal {
+            position: fixed;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);
+            z-index: 2000;
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90vw;
+            max-width: 500px;
+        }
+        
+        .modal-add {
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .modal-view {
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 450px;
+        }
+        
+        .modal-list {
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 500px;
+            max-height: 70vh;
+        }
+
+        .modal-info {
+            top: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 500px;
+            max-height: 80vh;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1.25rem 1.25rem 0;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            color: #6b7280;
+            font-size: 1.5rem;
+            border-radius: 0.5rem;
+        }
+        
+        .close-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+            padding: 0 1.25rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #f9fafb;
+        }
+        
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #dc2626;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .icon-btn {
+            font-size: 2rem;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-btn:hover {
+            border-color: #fca5a5;
+            transform: scale(1.05);
+        }
+        
+        .icon-btn.selected {
+            background: #fee2e2;
+            border-color: #dc2626;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        
+        .success-box {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            margin: 0 1.25rem 1rem;
+        }
+        
+        .error-box {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 0 1.25rem 1rem;
+        }
+        
+        .success-text {
+            font-size: 0.875rem;
+            color: #166534;
+            font-weight: 500;
+        }
+        
+        .error-text {
+            font-size: 0.875rem;
+            color: #991b1b;
+        }
+        
+        .hint-text {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        
+        .pin-detail {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            color: #374151;
+            margin-bottom: 0.75rem;
+            padding: 0 1.25rem;
+        }
+        
+        .pin-info {
+            flex: 1;
+        }
+        
+        .pin-schedule {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 0.75rem;
+            margin: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+        }
+        
+        .pin-notes {
+            background: #fafafa;
+            border: 1px solid #e5e7eb;
+            padding: 0.75rem;
+            margin: 0.5rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+        
+        .divider {
+            border-top: 1px solid #e5e7eb;
+            margin: 1rem 1.25rem;
+            padding-top: 1rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0 1.25rem 1.25rem;
+        }
+        
+        .icon-delete {
+            color: #dc2626;
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: background 0.2s;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-delete:hover {
+            background: #fee2e2;
+        }
+        
+        /* HOUSE LIST */
+        .list-container {
+            padding: 0 1.25rem 1.25rem;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+        
+        .list-item:hover {
+            background: #f9fafb;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-item.visited {
+            background: #f0fdf4;
+            opacity: 0.7;
+        }
+        
+        .list-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .list-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .list-family {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+        
+        .list-address {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .list-schedule {
+            font-size: 0.75rem;
+            color: #059669;
+            margin-top: 0.25rem;
+        }
+        
+        .list-notes {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+            font-style: italic;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .checkbox.checked {
+            background: #10b981;
+            border-color: #10b981;
+        }
+        
+        .checkbox.checked::after {
+            content: "✓";
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .checkbox-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            cursor: pointer;
+        }
+        
+        .admin-controls {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin: 1rem 1.25rem;
+        }
+        
+        .admin-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .empty-list {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+        
+        #loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #dc2626;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .submit-btn-container {
+            background: white;
+            padding: 1.25rem;
+            border-top: 2px solid #e5e7eb;
+            position: sticky;
+            bottom: 0;
+        }
+        
+        /* ANIMATED TREE - FIXED ON ALL DEVICES */
+        .connection-status {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 999;
+            padding: 0.5rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        
+        .christmas-tree {
+            position: relative;
+            font-size: 24px;
+            text-align: center;
+            animation: tree-float 3s ease-in-out infinite;
+        }
+        
+        .tree-top {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+        
+        .lights {
+            position: absolute;
+            top: -5px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff0000;
+            opacity: 0;
+            animation: lights-off 2s infinite;
+        }
+        
+        .connection-status.connected .light {
+            animation: lights-on 1.5s infinite;
+        }
+        
+        .connection-status.connected .light:nth-child(1) { animation-delay: 0s; }
+        .connection-status.connected .light:nth-child(2) { animation-delay: 0.3s; }
+        .connection-status.connected .light:nth-child(3) { animation-delay: 0.6s; }
+        .connection-status.connected .light:nth-child(4) { animation-delay: 0.9s; }
+        
+        @keyframes tree-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+        
+        @keyframes lights-on {
+            0%, 100% { 
+                opacity: 1;
+                background: #ff0000;
+                box-shadow: 0 0 10px #ff0000;
             }
-        }, 5000);
-    }
-    
-    if (snowInterval) clearInterval(snowInterval);
-    snowInterval = setInterval(createSnowflake, 150);
-    
-    if (snowEnabled) {
-        for (let i = 0; i < 20; i++) {
-            setTimeout(() => createSnowflake(), Math.random() * 1000);
+            25% { 
+                background: #00ff00;
+                box-shadow: 0 0 10px #00ff00;
+            }
+            50% { 
+                background: #ffff00;
+                box-shadow: 0 0 10px #ffff00;
+            }
+            75% { 
+                background: #0000ff;
+                box-shadow: 0 0 10px #0000ff;
+            }
         }
-    }
-}
-
-function initSnowButton() {
-    const snowBtn = document.getElementById('snow-btn');
-    
-    snowEnabled = localStorage.getItem('carolers_snow') !== 'false';
-    
-    if (snowEnabled) {
-        snowBtn.textContent = '❄️';
-        snowBtn.classList.remove('snow-off');
-        snowBtn.title = 'Turn off snow animation';
-    } else {
-        snowBtn.textContent = '❄️';
-        snowBtn.classList.add('snow-off');
-        snowBtn.title = 'Turn on snow animation';
-        document.getElementById('snow').innerHTML = '';
-    }
-    
-    snowBtn.addEventListener('click', () => {
-        snowEnabled = !snowEnabled;
         
-        if (snowEnabled) {
-            snowBtn.textContent = '❄️';
-            snowBtn.classList.remove('snow-off');
-            snowBtn.title = 'Turn off snow animation';
-            localStorage.setItem('carolers_snow', 'true');
+        @keyframes lights-off {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.1; }
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3000;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            animation: slideDown 0.3s ease-out;
+            background: white;
+            border: 2px solid #e5e7eb;
+            max-width: 90vw;
+            text-align: center;
+        }
+        
+        .toast.success {
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+        
+        .toast.error {
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -100%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Custom tooltip for detailed information */
+        .custom-tooltip {
+            background: white;
+            border: 2px solid #dc2626;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 280px;
+        }
+        
+        .tooltip-family {
+            font-weight: bold;
+            font-size: 16px;
+            color: #1f2937;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tooltip-address {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .tooltip-schedule {
+            font-size: 13px;
+            color: #059669;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tooltip-notes {
+            font-size: 13px;
+            color: #6b7280;
+            font-style: italic;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+
+        /* Styles for visited markers */
+        .visited-marker {
+            opacity: 0.6;
+            filter: grayscale(0.7) brightness(1.2);
+            transition: all 0.3s ease;
+        }
+        
+        .visited-marker::before {
+            content: "✅";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 16px;
+            background: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        /* Delete button in tooltip */
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+            width: 100%;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+        
+        /* Delete confirmation modal */
+        .delete-confirm-modal {
+            max-width: 400px;
+        }
+        
+        .delete-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0 1.25rem 1.25rem;
+        }
+
+        /* Styles for info modal */
+        .info-content {
+            padding: 0 1.25rem 1.25rem;
+        }
+        
+        .info-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-steps {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .info-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .step-number {
+            background: #0ea5e9;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-icon {
+            background: #10b981;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+        
+        .step-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+        
+        .tip-box {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .tip-title {
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .tip-content {
+            font-size: 0.875rem;
+            color: #0369a1;
+            line-height: 1.4;
+        }
+        
+        /* STILURI PENTRU SELECTORI DE PROGRAM */
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+        
+        .schedule-date {
+            grid-column: 1 / -1;
+        }
+        
+        .time-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-family: inherit;
+            background: #f9fafb;
+            text-align: center;
+        }
+        
+        .time-separator {
+            text-align: center;
+            font-weight: bold;
+            color: #6b7280;
+            padding: 0 0.5rem;
+        }
+        
+        .schedule-display {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            color: #0369a1;
+            text-align: center;
+        }
+        
+        .time-selector-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        
+        /* STILURI PENTRU FULGI DE ZĂPADĂ */
+        #snow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            animation-name: fall;
+            animation-timing-function: linear;
+            opacity: 0.8;
+            filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+        }
+
+        @keyframes fall {
+            to { 
+                transform: translateY(100vh) rotate(360deg); 
+                opacity: 0;
+            }
+        }
+
+        /* STILURI PENTRU BUTON MUIZCĂ */
+        #music-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        #music-btn:hover {
+            transform: scale(1.1);
+            background: #7c3aed;
+        }
+
+        #music-btn.music-playing {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        /* STILURI PENTRU BUTON FULGI */
+        #snow-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            font-size: 24px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        #snow-btn:hover {
+            transform: scale(1.1);
+            background: #0284c7;
+        }
+
+        #snow-btn.snow-off {
+            background: #94a3b8;
+            opacity: 0.7;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* STILURI PENTRU CONTOR VIZITATORI */
+        #visitor-counter {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        #visitor-count {
+            font-weight: 700;
+            color: #dc2626;
+            font-size: 16px;
+        }
+
+        /* STILURI PENTRU BUTON STATISTICI */
+        #stats-btn {
+            background: linear-gradient(to right, #0ea5e9, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 9999px;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-weight: 600;
+        }
+
+        #stats-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        #stats-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* STILURI PENTRU MODAL STATISTICI */
+        .stat-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-bar {
+            height: 8px;
+            background: linear-gradient(to right, #dc2626, #16a34a);
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+
+        /* On mobile, positioning adjustments */
+        @media (max-width: 767px) {
+            .connection-status {
+                top: 70px;
+                right: 10px;
+                padding: 0.4rem;
+            }
+            
+            .christmas-tree {
+                font-size: 20px;
+            }
+            
+            .light {
+                width: 6px;
+                height: 6px;
+            }
+            
+            .modal {
+                width: 95vw;
+            }
+            
+            #left-controls, #right-controls {
+                bottom: 10px;
+            }
+            
+            #left-controls {
+                left: 10px;
+            }
+            
+            #right-controls {
+                right: 10px;
+            }
+
+            .custom-tooltip {
+                max-width: 250px;
+                padding: 10px;
+            }
+
+            .visited-marker::before {
+                top: -6px;
+                right: -6px;
+                font-size: 14px;
+                width: 18px;
+                height: 18px;
+            }
+
+            #header-content {
+                gap: 0.25rem;
+            }
+
+            #pin-count {
+                min-width: 70px;
+                padding: 0.3rem 0.6rem;
+            }
+            
+            #pin-count-main {
+                font-size: 0.8rem;
+            }
+            
+            #pin-count-visited {
+                font-size: 0.65rem;
+            }
+            
+            #info-btn {
+                font-size: 0.75rem;
+                padding: 0.3rem 0.6rem;
+            }
+            
+            .schedule-grid {
+                grid-template-columns: 1fr;
+                gap: 0.25rem;
+            }
+            
+            .time-separator {
+                display: none;
+            }
+            
+            .time-selector-group {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Ajustări pentru mobile - elemente noi */
+            #visitor-counter {
+                top: 70px;
+                left: 10px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            #visitor-count {
+                font-size: 14px;
+            }
+
+            #stats-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.7rem;
+            }
+        }
+        
+        /* On desktop */
+        @media (min-width: 768px) {
+            #header p {
+                display: block;
+            }
+            
+            #header {
+                padding: 1rem;
+            }
+            
+            #header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .connection-status {
+                top: 100px;
+                right: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div id="header-content">
+            <div id="header-title">
+                <span style="font-size: 1.5rem;">📍</span>
+                <div>
+                    <h1>Welcome Carolers 🎄</h1>
+                    <p>Global Map - Add your house to the map!</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button id="info-btn" title="Usage instructions">
+                    ❓ Info
+                </button>
+                <div id="pin-count" title="Click for house list">
+                    <div id="pin-count-main">0 houses</div>
+                    <div id="pin-count-visited">0 visited</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+        
+        <!-- ELEMENTE NOI ADĂUGATE -->
+        <div id="snow"></div>
+
+        <!-- Contor vizitatori -->
+        <div id="visitor-counter">
+            <span>👥 Visitors:</span>
+            <span id="visitor-count">0</span>
+        </div>
+        
+        <!-- LEFT BUTTONS -->
+        <div id="left-controls">
+            <!-- BUTON FULGI DE ZĂPADĂ - SUS -->
+            <button id="snow-btn" title="Toggle snow animation">
+                ❄️
+            </button>
+            
+            <!-- BUTON MUIZCĂ - POZIȚIONAT CORECT -->
+            <button id="music-btn" title="Toggle Christmas music">
+                🔇
+            </button>
+            
+            <button id="center-btn" title="Center map on default location">
+                🏠
+            </button>
+            <button id="gps-btn" title="Use your current location">
+                📍
+            </button>
+        </div>
+        
+        <!-- RIGHT BUTTONS (DOAR ADD ȘI SHARE) -->
+        <div id="right-controls">
+            <button id="share-btn-right" title="Share on WhatsApp">
+                📱
+            </button>
+            <button id="add-btn-right" title="Add house">
+                +
+            </button>
+        </div>
+        
+        <!-- Animated tree for connection status -->
+        <div id="connection-status" class="connection-status">
+            <div class="christmas-tree">
+                <div class="tree-top">🎄</div>
+                <div class="lights">
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                    <span class="light"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Overlay for modals -->
+        <div id="modal-overlay" class="modal-overlay hidden"></div>
+        
+        <!-- Info/Help Modal -->
+        <div id="info-modal" class="modal modal-info hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">❓</span>
+                    Usage Instructions
+                </h3>
+                <button class="close-btn" onclick="closeInfoModal()">×</button>
+            </div>
+            
+            <div class="info-content">
+                <!-- Name section at the beginning -->
+                <div style="text-align: center; padding: 1rem; background: #f0f9ff; border-radius: 0.75rem; margin-bottom: 1.5rem;">
+                    <p style="font-weight: 600; color: #0369a1; margin-bottom: 0.5rem;">
+                        🎄 <strong>Free project</strong> created by <strong>Alex Chiriac</strong>
+                    </p>
+                    <p style="font-size: 0.75rem; color: #6b7280;">
+                        © 2025 Welcome Carolers - Global Map
+                    </p>
+                </div>
+
+                <div class="info-section">
+                    <h4 class="info-title">🎯 How to add your house:</h4>
+                    <ol class="info-steps">
+                        <li class="info-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-title">Select location</div>
+                                <div class="step-description">Click on the map in front of your house or use the 📍 GPS button</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-title">Fill out the form</div>
+                                <div class="step-description">Press the "+" button and complete your house details</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-title">Done!</div>
+                                <div class="step-description">Your house will appear on the map for carolers</div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                
+                <div class="info-section">
+                    <h4 class="info-title">🎄 How to carol:</h4>
+                    <ol class="info-steps">
+                        <li class="info-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-title">See available houses</div>
+                                <div class="step-description">Houses with emojis on the map welcome carolers</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-title">Mark as visited</div>
+                                <div class="step-description">Single click on a house to mark it as visited</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-title">Delete house (if needed)</div>
+                                <div class="step-description">Double-click on a house to delete it (with password)</div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="info-section">
+                    <h4 class="info-title">🎛️ Buttons and features:</h4>
+                    <ol class="info-steps">
+                        <li class="info-step">
+                            <div class="step-icon">🏠</div>
+                            <div class="step-content">
+                                <div class="step-title">Center map</div>
+                                <div class="step-description">The 🏠 button recenters the map to the default location</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">📍</div>
+                            <div class="step-content">
+                                <div class="step-title">Your location</div>
+                                <div class="step-description">The 📍 button uses GPS to position you on the map</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">📋</div>
+                            <div class="step-content">
+                                <div class="step-title">House list</div>
+                                <div class="step-description">Press the house count (top left) for ordered list by streets</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">🔄</div>
+                            <div class="step-content">
+                                <div class="step-title">Reset visits</div>
+                                <div class="step-description">The "Reset Visits" button clears all visited house markings</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">🔊</div>
+                            <div class="step-content">
+                                <div class="step-title">Christmas music</div>
+                                <div class="step-description">The 🔊 button toggles background Christmas music</div>
+                            </div>
+                        </li>
+                        <li class="info-step">
+                            <div class="step-icon">❄️</div>
+                            <div class="step-content">
+                                <div class="step-title">Snow animation</div>
+                                <div class="step-description">The ❄️ button toggles snow falling animation</div>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+                
+                <div class="tip-box">
+                    <div class="tip-title">💡 Useful tips:</div>
+                    <div class="tip-content">
+                        • You can set a password when adding your house to be able to delete it later<br>
+                        • Houses marked with ✅ have already been caroled<br>
+                        • Share the map with friends using the 📱 button<br>
+                        • You can add houses anywhere in the world<br>
+                        • Enjoy the snow animation and Christmas music! 🎄
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add modal -->
+        <div id="add-modal" class="modal modal-add hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">+</span>
+                    Add Your House
+                </h3>
+                <button class="close-btn" onclick="closeAddModal()">×</button>
+            </div>
+            
+            <div id="location-success" class="success-box hidden">
+                <p class="success-text">✓ Location selected</p>
+                <p class="hint-text">Click on the map or use GPS to change location</p>
+            </div>
+            
+            <div id="error-message" class="error-box hidden">
+                <div style="display: flex; gap: 0.5rem;">
+                    <span style="font-size: 1.25rem;">❌</span>
+                    <div style="flex: 1;">
+                        <p class="error-text" style="font-weight: 600; margin-bottom: 0.25rem;">Error</p>
+                        <p class="error-text" id="error-text" style="white-space: pre-line;"></p>
+                    </div>
+                </div>
+                <button onclick="closeError()" style="margin-top: 0.5rem; font-size: 0.75rem; color: #991b1b; background: none; border: none; cursor: pointer; font-weight: 500;">
+                    Close
+                </button>
+            </div>
+            
+            <form id="add-form" onsubmit="handleSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label">Choose your Christmas icon 🎅</label>
+                    <div class="icon-grid" id="icon-grid"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">👤 Family Name *</label>
+                    <input type="text" class="form-input" id="name" placeholder="Santa" maxlength="50" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">🏠 Street *</label>
+                    <input type="text" class="form-input" id="address" placeholder="North Pole" maxlength="100" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">House Number *</label>
+                    <input type="text" class="form-input" id="streetNumber" placeholder="1" maxlength="10" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">🕐 Preferred schedule</label>
+                    
+                    <!-- DATA SELECTOR -->
+                    <div class="schedule-date">
+                        <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Select date (December only):</label>
+                        <select class="form-input" id="schedule-date" style="padding: 0.75rem;">
+                            <option value="">-- Select date --</option>
+                            <!-- Dates will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    
+                    <!-- TIME SELECTOR -->
+                    <div class="schedule-grid">
+                        <div>
+                            <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">Start time:</label>
+                            <div class="time-selector-group">
+                                <select class="time-input" id="start-hour" style="padding: 0.75rem;">
+                                    <option value="">Hour</option>
+                                    <!-- Hours 00-23 -->
+                                </select>
+                                <select class="time-input" id="start-minute" style="padding: 0.75rem;">
+                                    <option value="">Minute</option>
+                                    <!-- Minutes 00-59 -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="time-separator">-</div>
+                        <div>
+                            <label class="form-label" style="font-size: 0.875rem; margin-bottom: 0.25rem;">End time:</label>
+                            <div class="time-selector-group">
+                                <select class="time-input" id="end-hour" style="padding: 0.75rem;">
+                                    <option value="">Hour</option>
+                                    <!-- Hours 00-23 -->
+                                </select>
+                                <select class="time-input" id="end-minute" style="padding: 0.75rem;">
+                                    <option value="">Minute</option>
+                                    <!-- Minutes 00-59 -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- SCHEDULE DISPLAY -->
+                    <div id="schedule-display" class="schedule-display hidden">
+                        <strong>Selected schedule:</strong>
+                        <span id="schedule-text"></span>
+                    </div>
+                    
+                    <p class="hint-text">💡 Select date and time when you prefer carolers to visit</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Additional details</label>
+                    <textarea class="form-textarea" id="notes" rows="3" placeholder="Ex: Ring the bell" maxlength="200"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password for deletion (optional)</label>
+                    <input type="password" class="form-input" id="password" placeholder="Set a password" maxlength="20">
+                    <p class="hint-text">💡 Only you will be able to delete the pin with this password</p>
+                </div>
+                
+                <div class="submit-btn-container">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Add to Map
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- House list modal -->
+        <div id="list-modal" class="modal modal-list hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">📋</span>
+                    House List
+                </h3>
+                <button class="close-btn" onclick="closeListModal()">×</button>
+            </div>
+            
+            <div class="admin-controls" id="admin-controls">
+                <div class="admin-title">
+                    <span>🔧</span>
+                    Admin Control
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button onclick="showAdminLogin()" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.5rem 1rem;">
+                        Admin Login
+                    </button>
+                    <button onclick="resetAllVisited()" class="btn btn-danger" style="font-size: 0.75rem; padding: 0.5rem 1rem;" id="reset-btn">
+                        Reset Visits
+                    </button>
+                    <!-- BUTON PENTRU STATISTICI - VIZIBIL DOAR DUPĂ LOGIN -->
+                    <button onclick="showStatistics()" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.5rem 1rem; display: none;" id="stats-btn">
+                        🌍 Statistics
+                    </button>
+                </div>
+            </div>
+            
+            <div class="list-container" id="list-container">
+                <!-- Houses will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- Admin login modal -->
+        <div id="admin-login-modal" class="modal modal-view hidden">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span style="font-size: 1.5rem;">🔧</span>
+                    Admin Login
+                </h3>
+                <button class="close-btn" onclick="closeAdminLogin()">×</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Admin Password:</label>
+                <input type="password" class="form-input" id="admin-password" placeholder="Enter admin password" required>
+            </div>
+            
+            <div class="action-buttons">
+                <button onclick="verifyAdmin()" class="btn btn-primary" style="flex: 1;">
+                    Login
+                </button>
+                <button onclick="closeAdminLogin()" class="btn btn-secondary" style="flex: 1;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+        
+        <!-- Delete confirmation modal -->
+        <div id="delete-confirm-modal" class="modal delete-confirm-modal hidden">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #dc2626;">
+                    <span style="font-size: 1.5rem;">🗑️</span>
+                    Confirm Deletion
+                </h3>
+                <button class="close-btn" onclick="closeDeleteConfirmModal()">×</button>
+            </div>
+            
+            <div class="form-group">
+                <p>Are you sure you want to delete this house?</p>
+                <p class="hint-text" id="delete-house-info"></p>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Enter password:</label>
+                <input type="password" class="form-input" id="delete-confirm-password" placeholder="Deletion password" required>
+                <p class="hint-text">💡 Enter your password if you set one, or the admin password</p>
+            </div>
+            
+            <div class="delete-actions">
+                <button onclick="confirmPinDelete()" class="btn btn-danger" style="flex: 1;">
+                    Delete
+                </button>
+                <button onclick="closeDeleteConfirmModal()" class="btn btn-secondary" style="flex: 1;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+        
+        <div id="loading">
+            <div style="text-align: center;">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; color: #6b7280; font-weight: 500;">Loading map...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Element audio pentru muzică -->
+    <audio id="bg-music" loop preload="auto">
+        <!-- Sursa locală -->
+        <source src="christmas-music.mp3" type="audio/mpeg">
+        
+        <!-- Sursa online backup -->
+        <source src="https://assets.mixkit.co/music/preview/mixkit-jingle-bells-311.mp3" type="audio/mpeg">
+        
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script>
+        // CONFIGURAȚIE DIN FIȘIER EXTERN
+        const ADMIN_PASSWORD = window.APP_CONFIG.ADMIN_PASSWORD;
+        const FIREBASE_CONFIG = window.APP_CONFIG.FIREBASE_CONFIG;
+        const ICONS = ['🎄', '🎅', '⭐', '🔔', '🎁', '❄️', '🕯️', '🦌', '🧦', '🍪', '🤶', '✨'];
+        
+        // Default center coordinates - Bucharest
+        const DEFAULT_CENTER = [44.47729443095744, 26.074460492097725];
+        
+        let map;
+        let markers = [];
+        let pins = [];
+        let selectedIcon = '🎄';
+        let clickedLocation = null;
+        let selectedPin = null;
+        let isConnected = false;
+        let userLocationMarker = null;
+        let isAdmin = false;
+        let visitedHouses = JSON.parse(localStorage.getItem('visitedHouses') || '{}');
+        let lastClickTime = 0;
+        let clickTimer = null;
+        let snowInterval = null;
+        let snowEnabled = true;
+        let visitorId = null;
+        
+        document.addEventListener('DOMContentLoaded', init);
+        
+        function init() {
+            initMap();
+            initIconGrid();
+            setupEventListeners();
+            initFirebase();
+            initDateSelector();
+            initTimeSelectors();
+            setupNewFeatures();
+            initVisitorCounter();
+        }
+        
+        function setupNewFeatures() {
             initSnowflakes();
-            showToast("Snow animation enabled! ❄️", "success");
-        } else {
-            snowBtn.textContent = '❄️';
-            snowBtn.classList.add('snow-off');
-            snowBtn.title = 'Turn on snow animation';
-            localStorage.setItem('carolers_snow', 'false');
-            if (snowInterval) clearInterval(snowInterval);
-            document.getElementById('snow').innerHTML = '';
-            showToast("Snow animation disabled", "info");
+            initMusicControls();
+            initSnowButton();
         }
-    });
-}
-
-function initMusicControls() {
-    const musicBtn = document.getElementById('music-btn');
-    const bgMusic = document.getElementById('bg-music');
-    
-    // Verifică preferința utilizatorului
-    const isMusicOn = localStorage.getItem('carolers_music') !== 'false';
-    
-    // Setează starea inițială
-    if (isMusicOn) {
-        bgMusic.volume = 0.5;
-        musicBtn.textContent = '🔊';
-        musicBtn.classList.add('music-playing');
-        musicBtn.title = 'Turn off Christmas music';
         
-        // Încearcă să pornești muzica cu o întârziere mică
-        setTimeout(() => {
-            bgMusic.play().catch(error => {
-                console.log("Auto-play blocked:", error.name);
-                // Schimbă butonul pentru a indica că trebuie pornit manual
-                musicBtn.textContent = '▶️';
-                musicBtn.classList.remove('music-playing');
-                musicBtn.title = 'Click to play music (autoplay blocked)';
-                showToast("Click the music button to start Christmas music", "info");
+        function initSnowflakes() {
+            const snowContainer = document.getElementById('snow');
+            snowEnabled = localStorage.getItem('carolers_snow') !== 'false';
+            
+            function createSnowflake() {
+                if (!snowEnabled) return;
+                
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                snowflake.style.left = Math.random() * 100 + 'vw';
+                snowflake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+                snowflake.style.width = Math.random() * 8 + 4 + 'px';
+                snowflake.style.height = snowflake.style.width;
+                
+                if (Math.random() > 0.7) {
+                    snowflake.style.background = 'rgba(200, 230, 255, 0.9)';
+                }
+                
+                snowContainer.appendChild(snowflake);
+                
+                setTimeout(() => {
+                    if (snowflake.parentNode === snowContainer) {
+                        snowContainer.removeChild(snowflake);
+                    }
+                }, 5000);
+            }
+            
+            if (snowInterval) clearInterval(snowInterval);
+            snowInterval = setInterval(createSnowflake, 150);
+            
+            if (snowEnabled) {
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => createSnowflake(), Math.random() * 1000);
+                }
+            }
+        }
+        
+        function initSnowButton() {
+            const snowBtn = document.getElementById('snow-btn');
+            
+            snowEnabled = localStorage.getItem('carolers_snow') !== 'false';
+            
+            if (snowEnabled) {
+                snowBtn.textContent = '❄️';
+                snowBtn.classList.remove('snow-off');
+                snowBtn.title = 'Turn off snow animation';
+            } else {
+                snowBtn.textContent = '❄️';
+                snowBtn.classList.add('snow-off');
+                snowBtn.title = 'Turn on snow animation';
+                document.getElementById('snow').innerHTML = '';
+            }
+            
+            snowBtn.addEventListener('click', () => {
+                snowEnabled = !snowEnabled;
+                
+                if (snowEnabled) {
+                    snowBtn.textContent = '❄️';
+                    snowBtn.classList.remove('snow-off');
+                    snowBtn.title = 'Turn off snow animation';
+                    localStorage.setItem('carolers_snow', 'true');
+                    initSnowflakes();
+                    showToast("Snow animation enabled! ❄️", "success");
+                } else {
+                    snowBtn.textContent = '❄️';
+                    snowBtn.classList.add('snow-off');
+                    snowBtn.title = 'Turn on snow animation';
+                    localStorage.setItem('carolers_snow', 'false');
+                    if (snowInterval) clearInterval(snowInterval);
+                    document.getElementById('snow').innerHTML = '';
+                    showToast("Snow animation disabled", "info");
+                }
             });
-        }, 1000);
+        }
         
-    } else {
-        musicBtn.textContent = '🔇';
-        musicBtn.classList.remove('music-playing');
-        musicBtn.title = 'Turn on Christmas music';
-    }
-    
-    musicBtn.addEventListener('click', () => {
-        if (bgMusic.paused) {
-            bgMusic.volume = 0.5;
-            bgMusic.play().then(() => {
+        function initMusicControls() {
+            const musicBtn = document.getElementById('music-btn');
+            const bgMusic = document.getElementById('bg-music');
+            
+            // Verifică preferința utilizatorului
+            const isMusicOn = localStorage.getItem('carolers_music') !== 'false';
+            
+            // Setează starea inițială
+            if (isMusicOn) {
+                bgMusic.volume = 0.5;
                 musicBtn.textContent = '🔊';
                 musicBtn.classList.add('music-playing');
                 musicBtn.title = 'Turn off Christmas music';
-                localStorage.setItem('carolers_music', 'true');
-                showToast("Christmas music started! 🎶", "success");
-            }).catch(error => {
-                console.log("Play failed:", error);
-                showToast("Click to play music manually", "info");
-                musicBtn.textContent = '▶️';
-                musicBtn.title = 'Click to play (requires interaction)';
-            });
-        } else {
-            bgMusic.pause();
-            musicBtn.textContent = '🔇';
-            musicBtn.classList.remove('music-playing');
-            musicBtn.title = 'Turn on Christmas music';
-            localStorage.setItem('carolers_music', 'false');
-            showToast("Music paused", "info");
-        }
-    });
-    
-    // Adaugă un event listener pentru orice interacțiune cu pagina
-    document.addEventListener('click', function startMusicOnInteraction() {
-        if (bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
-            bgMusic.play().then(() => {
-                musicBtn.textContent = '🔊';
-                musicBtn.classList.add('music-playing');
-            }).catch(e => console.log("Play on interaction failed:", e));
-        }
-        // După prima interacțiune, îndepărtează event listener-ul
-        document.removeEventListener('click', startMusicOnInteraction);
-    });
-    
-    // Încearcă să pornești muzica când se face scroll
-    document.addEventListener('scroll', function startMusicOnScroll() {
-        if (bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
-            bgMusic.play().then(() => {
-                musicBtn.textContent = '🔊';
-                musicBtn.classList.add('music-playing');
-            }).catch(e => console.log("Play on scroll failed:", e));
-        }
-        document.removeEventListener('scroll', startMusicOnScroll);
-    });
-}
-
-async function initVisitorCounter() {
-    try {
-        // Generează ID unic pentru visitor
-        visitorId = localStorage.getItem('carolers_visitor_id');
-        if (!visitorId) {
-            visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('carolers_visitor_id', visitorId);
-        }
-        
-        // Obține geolocația mai detaliată
-        let geoData = {
-            country: 'Unknown',
-            city: 'Unknown',
-            region: 'Unknown',
-            countryCode: 'unknown',
-            timezone: 'Unknown',
-            languages: 'Unknown'
-        };
-        
-        try {
-            // Încearcă mai multe API-uri pentru redundanță
-            const geoResponse = await fetch('https://ipapi.co/json/');
-            if (geoResponse.ok) {
-                const geoJson = await geoResponse.json();
-                geoData = {
-                    country: geoJson.country_name || 'Unknown',
-                    city: geoJson.city || 'Unknown',
-                    region: geoJson.region || 'Unknown',
-                    countryCode: geoJson.country_code || 'unknown',
-                    timezone: geoJson.timezone || 'Unknown',
-                    languages: geoJson.languages || 'Unknown',
-                    latitude: geoJson.latitude,
-                    longitude: geoJson.longitude,
-                    org: geoJson.org || 'Unknown',
-                    postal: geoJson.postal || 'Unknown'
-                };
-            }
-        } catch (geoError) {
-            console.log("Primary geolocation fetch failed:", geoError);
-            
-            // Fallback API
-            try {
-                const fallbackResponse = await fetch('https://ipinfo.io/json');
-                if (fallbackResponse.ok) {
-                    const fallbackJson = await fallbackResponse.json();
-                    const loc = fallbackJson.loc ? fallbackJson.loc.split(',') : [null, null];
-                    geoData = {
-                        country: fallbackJson.country || 'Unknown',
-                        city: fallbackJson.city || 'Unknown',
-                        region: fallbackJson.region || 'Unknown',
-                        countryCode: fallbackJson.country || 'unknown',
-                        latitude: loc[0],
-                        longitude: loc[1],
-                        org: fallbackJson.org || 'Unknown',
-                        postal: fallbackJson.postal || 'Unknown'
-                    };
-                }
-            } catch (fallbackError) {
-                console.log("Fallback geolocation fetch failed:", fallbackError);
-            }
-        }
-        
-        // Colectează informații despre browser
-        const browserInfo = {
-            userAgent: navigator.userAgent.substring(0, 200),
-            language: navigator.language,
-            languages: navigator.languages ? navigator.languages.join(', ') : navigator.language,
-            platform: navigator.platform,
-            hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-            deviceMemory: navigator.deviceMemory || 'unknown',
-            cookieEnabled: navigator.cookieEnabled,
-            doNotTrack: navigator.doNotTrack || 'unknown',
-            maxTouchPoints: navigator.maxTouchPoints || 0
-        };
-        
-        if (isConnected) {
-            const database = firebase.database();
-            const visitorRef = database.ref('visitors/' + visitorId);
-            
-            const snapshot = await visitorRef.once('value');
-            
-            const visitorData = {
-                id: visitorId,
-                firstVisit: snapshot.exists() ? (snapshot.val().firstVisit || Date.now()) : Date.now(),
-                lastVisit: Date.now(),
-                visits: snapshot.exists() ? ((snapshot.val().visits || 1) + 1) : 1,
-                timestamp: Date.now(),
                 
-                // Geolocation data
-                country: geoData.country,
-                city: geoData.city,
-                region: geoData.region,
-                countryCode: geoData.countryCode,
-                timezone: geoData.timezone,
-                languages: geoData.languages,
-                latitude: geoData.latitude,
-                longitude: geoData.longitude,
-                org: geoData.org,
-                postal: geoData.postal,
+                // Încearcă să pornești muzica cu o întârziere mică
+                setTimeout(() => {
+                    bgMusic.play().catch(error => {
+                        console.log("Auto-play blocked:", error.name);
+                        // Schimbă butonul pentru a indica că trebuie pornit manual
+                        musicBtn.textContent = '▶️';
+                        musicBtn.classList.remove('music-playing');
+                        musicBtn.title = 'Click to play music (autoplay blocked)';
+                        showToast("Click the music button to start Christmas music", "info");
+                    });
+                }, 1000);
                 
-                // Browser/Device data
-                ...browserInfo,
-                
-                // Page info
-                referrer: document.referrer || 'direct',
-                screenResolution: `${window.screen.width}x${window.screen.height}`,
-                colorDepth: window.screen.colorDepth || 'unknown',
-                pixelRatio: window.devicePixelRatio || 1
-            };
-            
-            if (!snapshot.exists()) {
-                await visitorRef.set(visitorData);
             } else {
-                await visitorRef.update(visitorData);
+                musicBtn.textContent = '🔇';
+                musicBtn.classList.remove('music-playing');
+                musicBtn.title = 'Turn on Christmas music';
             }
             
-            // Obține numărul total de vizitatori
-            const allVisitorsRef = database.ref('visitors');
-            const allVisitorsSnapshot = await allVisitorsRef.once('value');
-            const totalVisitors = allVisitorsSnapshot.numChildren();
-            
-            document.getElementById('visitor-count').textContent = totalVisitors;
-            
-        } else {
-            // Mod offline
-            let totalVisitors = parseInt(localStorage.getItem('carolers_total_visitors') || '0');
-            const visitorKey = 'visitor_' + visitorId;
-            
-            if (!localStorage.getItem(visitorKey)) {
-                totalVisitors++;
-                localStorage.setItem('carolers_total_visitors', totalVisitors.toString());
-                localStorage.setItem(visitorKey, 'visited');
-            }
-            
-            document.getElementById('visitor-count').textContent = totalVisitors;
-        }
-        
-    } catch (error) {
-        console.error('Error initializing visitor counter:', error);
-        const fallbackCount = localStorage.getItem('carolers_visitor_count') || '1';
-        document.getElementById('visitor-count').textContent = fallbackCount;
-    }
-}
-
-async function showStatistics() {
-    if (!isAdmin) {
-        showError('You must be logged in as admin to view statistics!');
-        showAdminLogin();
-        return;
-    }
-    
-    try {
-        if (!isConnected) {
-            showError('Statistics are only available when connected to the internet');
-            return;
-        }
-        
-        // Afișează loading
-        const statsBtn = document.getElementById('stats-btn');
-        const originalText = statsBtn.innerHTML;
-        statsBtn.innerHTML = '🌍 Loading...';
-        statsBtn.disabled = true;
-        
-        const database = firebase.database();
-        const visitorsRef = database.ref('visitors');
-        const snapshot = await visitorsRef.once('value');
-        
-        const visitors = [];
-        snapshot.forEach((child) => {
-            visitors.push({
-                id: child.key,
-                ...child.val()
-            });
-        });
-        
-        // Reset buton
-        statsBtn.innerHTML = originalText;
-        statsBtn.disabled = false;
-        
-        if (visitors.length === 0) {
-            showError('No visitor data available yet');
-            return;
-        }
-        
-        // Calculează statistici
-        const countryStats = {};
-        const cityStats = {};
-        const dailyStats = {};
-        
-        visitors.forEach(visitor => {
-            const country = visitor.country || 'Unknown';
-            const city = visitor.city || 'Unknown';
-            
-            // Statistici pe țări
-            countryStats[country] = (countryStats[country] || 0) + 1;
-            
-            // Statistici pe orașe (TOATE, nu doar top 10)
-            if (city !== 'Unknown') {
-                cityStats[city] = (cityStats[city] || 0) + 1;
-            }
-            
-            // Statistici zilnice - corectat formatul datei
-            const visitDate = new Date(visitor.lastVisit || visitor.timestamp || Date.now());
-            // Formatează data ca "Dec 25, 2024" pentru a evita confuzia lună/zi
-            const formattedDate = visitDate.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
+            musicBtn.addEventListener('click', () => {
+                if (bgMusic.paused) {
+                    bgMusic.volume = 0.5;
+                    bgMusic.play().then(() => {
+                        musicBtn.textContent = '🔊';
+                        musicBtn.classList.add('music-playing');
+                        musicBtn.title = 'Turn off Christmas music';
+                        localStorage.setItem('carolers_music', 'true');
+                        showToast("Christmas music started! 🎶", "success");
+                    }).catch(error => {
+                        console.log("Play failed:", error);
+                        showToast("Click to play music manually", "info");
+                        musicBtn.textContent = '▶️';
+                        musicBtn.title = 'Click to play (requires interaction)';
+                    });
+                } else {
+                    bgMusic.pause();
+                    musicBtn.textContent = '🔇';
+                    musicBtn.classList.remove('music-playing');
+                    musicBtn.title = 'Turn on Christmas music';
+                    localStorage.setItem('carolers_music', 'false');
+                    showToast("Music paused", "info");
+                }
             });
             
-            dailyStats[formattedDate] = (dailyStats[formattedDate] || 0) + 1;
-        });
-        
-        // Creează HTML pentru statistici
-        let statsHtml = `
-            <div style="max-width: 500px; margin: 0 auto;">
-                <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #dc2626, #16a34a); color: white; border-radius: 0.75rem; margin-bottom: 1.5rem;">
-                    <h3 style="margin-bottom: 0.5rem;">🌍 Admin Statistics</h3>
-                    <p style="opacity: 0.9;">Total unique visitors: <strong style="font-size: 1.5em;">${visitors.length}</strong></p>
-                    <p style="opacity: 0.9; font-size: 0.875rem; margin-top: 0.5rem;">📊 Confidential data - Admin only</p>
-                </div>
-        `;
-        
-        // Statistici pe țări - TOATE țările, sortate
-        const sortedCountries = Object.entries(countryStats)
-            .sort((a, b) => b[1] - a[1]);
-        
-        statsHtml += `
-            <div class="stat-card">
-                <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.2em;">📍</span>
-                    All Countries (${sortedCountries.length})
-                </h4>
-                <div style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
-        `;
-        
-        sortedCountries.forEach(([country, count]) => {
-            const percentage = (count / visitors.length * 100).toFixed(1);
-            const barWidth = Math.min(100, (percentage * 1.5));
+            // Adaugă un event listener pentru orice interacțiune cu pagina
+            document.addEventListener('click', function startMusicOnInteraction() {
+                if (bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
+                    bgMusic.play().then(() => {
+                        musicBtn.textContent = '🔊';
+                        musicBtn.classList.add('music-playing');
+                    }).catch(e => console.log("Play on interaction failed:", e));
+                }
+                // După prima interacțiune, îndepărtează event listener-ul
+                document.removeEventListener('click', startMusicOnInteraction);
+            });
             
-            // Obține codul țării pentru steag
-            const countryCode = getCountryCode(country);
-            const flag = countryCode ? getFlagEmoji(countryCode) : '🌐';
-            
-            statsHtml += `
-                <div style="margin-bottom: 0.75rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
-                        <span style="font-weight: 500; display: flex; align-items: center; gap: 8px;">
-                            ${flag} ${country}
-                        </span>
-                        <span style="font-weight: 600; color: #dc2626;">${count} (${percentage}%)</span>
-                    </div>
-                    <div style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
-                        <div style="height: 100%; background: linear-gradient(to right, #dc2626, #16a34a); width: ${barWidth}%; border-radius: 4px;"></div>
-                    </div>
-                </div>
-            `;
-        });
+            // Încearcă să pornești muzica când se face scroll
+            document.addEventListener('scroll', function startMusicOnScroll() {
+                if (bgMusic.paused && localStorage.getItem('carolers_music') === 'true') {
+                    bgMusic.play().then(() => {
+                        musicBtn.textContent = '🔊';
+                        musicBtn.classList.add('music-playing');
+                    }).catch(e => console.log("Play on scroll failed:", e));
+                }
+                document.removeEventListener('scroll', startMusicOnScroll);
+            });
+        }
         
-        statsHtml += `
-                </div>
-            </div>
-        `;
-        
-        // Statistici pe orașe - TOATE orașele, sortate
-        const sortedCities = Object.entries(cityStats)
-            .sort((a, b) => b[1] - a[1]);
-        
-        if (sortedCities.length > 0) {
-            statsHtml += `
-                <div class="stat-card">
-                    <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2em;">🏙️</span>
-                        All Cities (${sortedCities.length})
-                    </h4>
-                    <div style="max-height: 300px; overflow-y: auto;">
-            `;
-            
-            sortedCities.forEach(([city, count]) => {
-                const percentage = (count / visitors.length * 100).toFixed(1);
+        async function initVisitorCounter() {
+            try {
+                // Generează ID unic pentru visitor
+                visitorId = localStorage.getItem('carolers_visitor_id');
+                if (!visitorId) {
+                    visitorId = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('carolers_visitor_id', visitorId);
+                }
                 
-                statsHtml += `
-                    <div style="display: flex; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid #e5e7eb; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 1.2em;">🏘️</span>
-                            <div>
-                                <div style="font-weight: 500;">${city}</div>
-                                <div style="font-size: 0.75rem; color: #6b7280;">${percentage}% of visitors</div>
-                            </div>
-                        </div>
-                        <span style="font-weight: 600; background: #dcfce7; padding: 4px 8px; border-radius: 9999px; font-size: 0.875rem;">${count}</span>
-                    </div>
-                `;
-            });
-            
-            statsHtml += `
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Distribuție temporală - ultimele 14 zile (pentru o vedere mai bună)
-        const sortedDates = Object.entries(dailyStats)
-            .sort((a, b) => {
-                // Sort by date properly
-                const dateA = new Date(a[0]);
-                const dateB = new Date(b[0]);
-                return dateB - dateA; // Cele mai recente primele
-            })
-            .slice(0, 14); // Ultimele 14 zile
-        
-        if (sortedDates.length > 0) {
-            // Sort for display (oldest to newest)
-            const displayDates = [...sortedDates].reverse();
-            
-            statsHtml += `
-                <div class="stat-card">
-                    <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2em;">📅</span>
-                        Last 14 Days Activity
-                    </h4>
-                    <div style="display: flex; height: 200px; align-items: flex-end; gap: 4px; border-bottom: 1px solid #e5e7eb; padding-bottom: 30px;">
-            `;
-            
-            const maxVisits = Math.max(...displayDates.map(([_, count]) => count));
-            
-            displayDates.forEach(([date, count]) => {
-                const barHeight = maxVisits > 0 ? (count / maxVisits * 120) : 0;
-                // Formatează data pentru afișare scurtă
-                const dateObj = new Date(date);
-                const shortDate = dateObj.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric' 
-                });
+                // Obține geolocația (doar pentru admin tracking)
+                let geoData = {
+                    country: 'Unknown',
+                    city: 'Unknown',
+                    region: 'Unknown'
+                };
                 
-                statsHtml += `
-                    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%;">
-                        <div style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
-                            <div 
-                                style="
-                                    width: 80%; 
-                                    margin: 0 auto;
-                                    background: linear-gradient(to top, #dc2626, #16a34a); 
-                                    border-radius: 4px 4px 0 0;
-                                    transition: all 0.3s ease;
-                                    cursor: pointer;
-                                "
-                                title="${date}: ${count} visitors"
-                                onmouseover="this.style.transform='scale(1.1)'; this.style.background='linear-gradient(to top, #ef4444, #22c55e)';"
-                                onmouseout="this.style.transform='scale(1)'; this.style.background='linear-gradient(to top, #dc2626, #16a34a)';"
-                                onclick="showDateDetails('${date}', ${count})"
-                            >
-                                <div style="height: ${barHeight}px;"></div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 8px; font-size: 0.75rem; color: #6b7280; text-align: center;">
-                            <div>${shortDate}</div>
-                            <div style="font-weight: 600; color: #1f2937; margin-top: 2px;">${count}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            statsHtml += `
-                    </div>
-                    <div style="margin-top: 1rem; font-size: 0.75rem; color: #6b7280; text-align: center;">
-                        Click on any bar to see details
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Dispozitive/browsers (detaliere completă)
-        const deviceStats = {
-            'Mobile': 0,
-            'Desktop': 0,
-            'Tablet': 0
-        };
-        
-        const browserStats = {};
-        const osStats = {};
-        
-        visitors.forEach(visitor => {
-            const ua = visitor.userAgent || navigator.userAgent;
-            
-            // Detect device
-            if (/mobile/i.test(ua)) deviceStats['Mobile']++;
-            else if (/tablet/i.test(ua)) deviceStats['Tablet']++;
-            else deviceStats['Desktop']++;
-            
-            // Detect browser
-            if (/chrome/i.test(ua) && !/edge/i.test(ua)) browserStats['Chrome'] = (browserStats['Chrome'] || 0) + 1;
-            else if (/firefox/i.test(ua)) browserStats['Firefox'] = (browserStats['Firefox'] || 0) + 1;
-            else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browserStats['Safari'] = (browserStats['Safari'] || 0) + 1;
-            else if (/edge/i.test(ua)) browserStats['Edge'] = (browserStats['Edge'] || 0) + 1;
-            else if (/opera/i.test(ua)) browserStats['Opera'] = (browserStats['Opera'] || 0) + 1;
-            else browserStats['Other'] = (browserStats['Other'] || 0) + 1;
-            
-            // Detect OS
-            if (/windows/i.test(ua)) osStats['Windows'] = (osStats['Windows'] || 0) + 1;
-            else if (/macintosh/i.test(ua) || /mac os/i.test(ua)) osStats['macOS'] = (osStats['macOS'] || 0) + 1;
-            else if (/linux/i.test(ua)) osStats['Linux'] = (osStats['Linux'] || 0) + 1;
-            else if (/android/i.test(ua)) osStats['Android'] = (osStats['Android'] || 0) + 1;
-            else if (/iphone/i.test(ua) || /ipad/i.test(ua)) osStats['iOS'] = (osStats['iOS'] || 0) + 1;
-            else osStats['Other'] = (osStats['Other'] || 0) + 1;
-        });
-        
-        // Sort browser and OS stats
-        const sortedBrowsers = Object.entries(browserStats).sort((a, b) => b[1] - a[1]);
-        const sortedOS = Object.entries(osStats).sort((a, b) => b[1] - a[1]);
-        
-        statsHtml += `
-            <div class="stat-card">
-                <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.2em;">💻</span>
-                    Devices & Browsers
-                </h4>
-                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
-        `;
-        
-        // Device stats
-        Object.entries(deviceStats).forEach(([device, count]) => {
-            const percentage = (count / visitors.length * 100).toFixed(1);
-            
-            statsHtml += `
-                <div style="flex: 1; min-width: 100px; text-align: center; padding: 1rem; background: #f8fafc; border-radius: 0.75rem;">
-                    <div style="font-size: 2em; margin-bottom: 0.5rem;">${
-                        device === 'Mobile' ? '📱' : 
-                        device === 'Tablet' ? '📟' : '💻'
-                    }</div>
-                    <div style="font-weight: 600; margin-bottom: 0.25rem; color: #1f2937;">${device}</div>
-                    <div style="font-size: 0.875rem; color: #6b7280;">${percentage}%</div>
-                    <div style="font-size: 0.875rem; color: #dc2626; font-weight: 600; margin-top: 0.25rem;">${count}</div>
-                </div>
-            `;
-        });
-        
-        statsHtml += `
-                </div>
-                
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
-                    <h5 style="margin-bottom: 0.75rem; color: #4b5563; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>🌐</span>
-                        Browsers
-                    </h5>
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-        `;
-        
-        sortedBrowsers.forEach(([browser, count]) => {
-            const percentage = (count / visitors.length * 100).toFixed(1);
-            const icon = browser === 'Chrome' ? '🟡' : 
-                        browser === 'Firefox' ? '🦊' : 
-                        browser === 'Safari' ? '🔵' : 
-                        browser === 'Edge' ? '🔷' : 
-                        browser === 'Opera' ? '🔴' : '🌐';
-            
-            statsHtml += `
-                <div style="flex: 1; min-width: 80px; text-align: center; padding: 0.75rem; background: #f1f5f9; border-radius: 0.5rem;">
-                    <div style="font-size: 1.5em; margin-bottom: 0.25rem;">${icon}</div>
-                    <div style="font-size: 0.75rem; font-weight: 500; color: #1f2937;">${browser}</div>
-                    <div style="font-size: 0.7rem; color: #6b7280; margin-top: 2px;">${percentage}%</div>
-                </div>
-            `;
-        });
-        
-        statsHtml += `
-                    </div>
-                </div>
-                
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
-                    <h5 style="margin-bottom: 0.75rem; color: #4b5563; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>⚙️</span>
-                        Operating Systems
-                    </h5>
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-        `;
-        
-        sortedOS.forEach(([os, count]) => {
-            const percentage = (count / visitors.length * 100).toFixed(1);
-            const icon = os === 'Windows' ? '🪟' : 
-                        os === 'macOS' ? '🍎' : 
-                        os === 'Linux' ? '🐧' : 
-                        os === 'Android' ? '🤖' : 
-                        os === 'iOS' ? '📱' : '💻';
-            
-            statsHtml += `
-                <div style="flex: 1; min-width: 80px; text-align: center; padding: 0.75rem; background: #f1f5f9; border-radius: 0.5rem;">
-                    <div style="font-size: 1.5em; margin-bottom: 0.25rem;">${icon}</div>
-                    <div style="font-size: 0.75rem; font-weight: 500; color: #1f2937;">${os}</div>
-                    <div style="font-size: 0.7rem; color: #6b7280; margin-top: 2px;">${percentage}%</div>
-                </div>
-            `;
-        });
-        
-        statsHtml += `
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Informații tehnice pentru admin
-        const uniqueCountries = Object.keys(countryStats).filter(c => c !== 'Unknown').length;
-        const uniqueCities = Object.keys(cityStats).filter(c => c !== 'Unknown').length;
-        const totalVisits = visitors.reduce((sum, visitor) => sum + (visitor.visits || 1), 0);
-        
-        // Găsește cea mai populară oră a zilei
-        const hourStats = Array(24).fill(0);
-        visitors.forEach(visitor => {
-            const visitDate = new Date(visitor.lastVisit || visitor.timestamp || Date.now());
-            const hour = visitDate.getHours();
-            hourStats[hour] = (hourStats[hour] || 0) + 1;
-        });
-        
-        const mostActiveHour = hourStats.indexOf(Math.max(...hourStats));
-        
-        statsHtml += `
-            <div class="stat-card" style="background: #f0f9ff; border: 1px solid #0ea5e9;">
-                <h4 style="margin-bottom: 1rem; color: #0369a1; display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 1.2em;">📈</span>
-                    Technical Summary
-                </h4>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                    <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #dc2626;">${uniqueCountries}</div>
-                        <div style="font-size: 0.75rem; color: #6b7280;">Unique Countries</div>
-                    </div>
-                    <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #16a34a;">${uniqueCities}</div>
-                        <div style="font-size: 0.75rem; color: #6b7280;">Unique Cities</div>
-                    </div>
-                    <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #8b5cf6;">${totalVisits}</div>
-                        <div style="font-size: 0.75rem; color: #6b7280;">Total Visits</div>
-                    </div>
-                    <div style="text-align: center; padding: 0.75rem; background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #f59e0b;">${mostActiveHour}:00</div>
-                        <div style="font-size: 0.75rem; color: #6b7280;">Most Active Hour</div>
-                    </div>
-                </div>
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-size: 0.75rem; color: #6b7280;">First Visitor</div>
-                            <div style="font-size: 0.875rem; font-weight: 500; color: #1f2937;">
-                                ${new Date(Math.min(...visitors.map(v => v.firstVisit || v.timestamp || Date.now()))).toLocaleDateString()}
-                            </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 0.75rem; color: #6b7280;">Last Updated</div>
-                            <div style="font-size: 0.875rem; font-weight: 500; color: #1f2937;">
-                                ${new Date().toLocaleString()}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        statsHtml += '</div>';
-        
-        // Creează un modal temporar pentru statistici
-        const statsModal = document.createElement('div');
-        statsModal.className = 'modal modal-view';
-        statsModal.id = 'stats-modal';
-        statsModal.style.maxWidth = '600px';
-        statsModal.style.maxHeight = '85vh';
-        statsModal.style.overflowY = 'auto';
-        
-        statsModal.innerHTML = `
-            <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 1;">
-                <h3 class="modal-title">
-                    <span style="font-size: 1.5rem;">🌍</span>
-                    Admin Statistics Dashboard
-                </h3>
-                <button class="close-btn" onclick="document.getElementById('stats-modal').remove(); document.getElementById('modal-overlay').classList.add('hidden');">×</button>
-            </div>
-            <div style="padding: 0 1.25rem 1.25rem;">
-                ${statsHtml}
-            </div>
-        `;
-        
-        // Adaugă modalul la body
-        document.body.appendChild(statsModal);
-        document.getElementById('modal-overlay').classList.remove('hidden');
-        
-        // Animație de intrare
-        setTimeout(() => {
-            statsModal.style.transform = 'translate(-50%, -50%) scale(1)';
-            statsModal.style.opacity = '1';
-        }, 10);
-        
-    } catch (error) {
-        console.error('Error loading statistics:', error);
-        showError('Could not load statistics: ' + error.message);
-        
-        // Reset buton în caz de eroare
-        const statsBtn = document.getElementById('stats-btn');
-        if (statsBtn) {
-            statsBtn.innerHTML = '🌍 Statistics';
-            statsBtn.disabled = false;
-        }
-    }
-}
-
-// Funcții helper pentru statistici
-function getCountryCode(countryName) {
-    // Map country names to country codes (simplified version)
-    const countryMap = {
-        'United States': 'US',
-        'United Kingdom': 'GB',
-        'Canada': 'CA',
-        'Australia': 'AU',
-        'Germany': 'DE',
-        'France': 'FR',
-        'Italy': 'IT',
-        'Spain': 'ES',
-        'Japan': 'JP',
-        'China': 'CN',
-        'India': 'IN',
-        'Brazil': 'BR',
-        'Mexico': 'MX',
-        'Netherlands': 'NL',
-        'Switzerland': 'CH',
-        'Sweden': 'SE',
-        'Norway': 'NO',
-        'Denmark': 'DK',
-        'Finland': 'FI',
-        'Romania': 'RO',
-        'Poland': 'PL',
-        'Russia': 'RU',
-        'Ukraine': 'UA',
-        'Turkey': 'TR',
-        'Greece': 'GR',
-        'Portugal': 'PT',
-        'Belgium': 'BE',
-        'Austria': 'AT',
-        'Ireland': 'IE',
-        'New Zealand': 'NZ',
-        'South Africa': 'ZA',
-        'Egypt': 'EG',
-        'Israel': 'IL',
-        'Saudi Arabia': 'SA',
-        'United Arab Emirates': 'AE',
-        'Singapore': 'SG',
-        'Malaysia': 'MY',
-        'Indonesia': 'ID',
-        'Thailand': 'TH',
-        'Vietnam': 'VN',
-        'Philippines': 'PH',
-        'South Korea': 'KR',
-        'Taiwan': 'TW',
-        'Hong Kong': 'HK'
-    };
-    
-    return countryMap[countryName] || null;
-}
-
-function getFlagEmoji(countryCode) {
-    if (!countryCode) return '🌐';
-    
-    try {
-        // Convert country code to regional indicator symbols
-        const codePoints = countryCode.toUpperCase().split('').map(char => 
-            127397 + char.charCodeAt(0)
-        );
-        return String.fromCodePoint(...codePoints);
-    } catch (e) {
-        return '🌐';
-    }
-}
-
-function showDateDetails(date, count) {
-    showToast(`📅 ${date}: ${count} visitors`, "info");
-}
-
-function initDateSelector() {
-    const dateSelect = document.getElementById('schedule-date');
-    dateSelect.innerHTML = '<option value="">-- Select date --</option>';
-    
-    const currentYear = new Date().getFullYear();
-    const currentDate = new Date();
-    
-    for (let day = 1; day <= 31; day++) {
-        const date = new Date(currentYear, 11, day);
-        
-        if (date >= currentDate || date.getDate() === currentDate.getDate()) {
-            const formattedDate = date.toLocaleDateString('en-US', {
-                day: 'numeric',
-                month: 'short'
-            });
-            const option = document.createElement('option');
-            option.value = formattedDate;
-            option.textContent = formattedDate;
-            dateSelect.appendChild(option);
-        }
-    }
-}
-
-function initTimeSelectors() {
-    const hourSelectors = ['start-hour', 'end-hour'];
-    hourSelectors.forEach(id => {
-        const select = document.getElementById(id);
-        select.innerHTML = '<option value="">Hour</option>';
-        for (let hour = 0; hour < 24; hour++) {
-            const option = document.createElement('option');
-            option.value = hour.toString().padStart(2, '0');
-            option.textContent = hour.toString().padStart(2, '0');
-            select.appendChild(option);
-        }
-    });
-    
-    const minuteSelectors = ['start-minute', 'end-minute'];
-    minuteSelectors.forEach(id => {
-        const select = document.getElementById(id);
-        select.innerHTML = '<option value="">Minute</option>';
-        for (let minute = 0; minute < 60; minute += 5) {
-            const option = document.createElement('option');
-            option.value = minute.toString().padStart(2, '0');
-            option.textContent = minute.toString().padStart(2, '0');
-            select.appendChild(option);
-        }
-    });
-    
-    const timeSelectors = ['start-hour', 'start-minute', 'end-hour', 'end-minute', 'schedule-date'];
-    timeSelectors.forEach(id => {
-        document.getElementById(id).addEventListener('change', function() {
-            updateScheduleDisplay();
-            validateTimes();
-        });
-    });
-}
-
-function getSelectedTime(startOrEnd) {
-    const hour = document.getElementById(`${startOrEnd}-hour`).value;
-    const minute = document.getElementById(`${startOrEnd}-minute`).value;
-    
-    if (hour && minute) {
-        return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
-    }
-    return '';
-}
-
-function updateScheduleDisplay() {
-    const date = document.getElementById('schedule-date').value;
-    const startTime = getSelectedTime('start');
-    const endTime = getSelectedTime('end');
-    
-    const display = document.getElementById('schedule-display');
-    const scheduleText = document.getElementById('schedule-text');
-    
-    let scheduleString = '';
-    
-    if (date) {
-        scheduleString += date;
-        
-        if (startTime && endTime) {
-            scheduleString += `, ${startTime}-${endTime}`;
-        } else if (startTime) {
-            scheduleString += `, from ${startTime}`;
-        } else if (endTime) {
-            scheduleString += `, until ${endTime}`;
-        }
-    }
-    
-    if (scheduleString) {
-        scheduleText.textContent = scheduleString;
-        display.classList.remove('hidden');
-    } else {
-        display.classList.add('hidden');
-    }
-}
-
-function getScheduleValue() {
-    const date = document.getElementById('schedule-date').value;
-    const startTime = getSelectedTime('start');
-    const endTime = getSelectedTime('end');
-    
-    if (!date && !startTime && !endTime) {
-        return '';
-    }
-    
-    let scheduleString = '';
-    
-    if (date) {
-        scheduleString += date;
-    }
-    
-    if (startTime && endTime) {
-        if (scheduleString) {
-            scheduleString += `, ${startTime}-${endTime}`;
-        } else {
-            scheduleString = `${startTime}-${endTime}`;
-        }
-    } else if (startTime) {
-        if (scheduleString) {
-            scheduleString += `, from ${startTime}`;
-        } else {
-            scheduleString = `From ${startTime}`;
-        }
-    } else if (endTime) {
-        if (scheduleString) {
-            scheduleString += `, until ${endTime}`;
-        } else {
-            scheduleString = `Until ${endTime}`;
-        }
-    }
-    
-    return scheduleString;
-}
-
-function validateTimes() {
-    const startTime = getSelectedTime('start');
-    const endTime = getSelectedTime('end');
-    
-    if (startTime && endTime) {
-        const startMinutes = timeToMinutes(startTime);
-        const endMinutes = timeToMinutes(endTime);
-        
-        if (endMinutes <= startMinutes) {
-            showError('End time must be after start time!');
-            document.getElementById('end-hour').value = '';
-            document.getElementById('end-minute').value = '';
-            document.getElementById('schedule-display').classList.add('hidden');
-            return false;
-        }
-    }
-    return true;
-}
-
-function timeToMinutes(time) {
-    const [hours, minutes] = time.split(':').map(Number);
-    return hours * 60 + minutes;
-}
-
-function setupEventListeners() {
-    document.getElementById('add-btn-right').addEventListener('click', openAddModal);
-    document.getElementById('gps-btn').addEventListener('click', getUserLocation);
-    document.getElementById('center-btn').addEventListener('click', centerToDefault);
-    document.getElementById('share-btn-right').addEventListener('click', shareOnWhatsApp);
-    document.getElementById('pin-count').addEventListener('click', showListModal);
-    document.getElementById('info-btn').addEventListener('click', showInfoModal);
-    document.getElementById('modal-overlay').addEventListener('click', closeAllModals);
-}
-
-function initFirebase() {
-    try {
-        if (typeof firebase === 'undefined') {
-            console.error('Firebase SDK not loaded');
-            isConnected = false;
-            updateConnectionStatus();
-            loadFromLocalStorage();
-            return;
-        }
-
-        if (!firebase.apps.length) {
-            firebase.initializeApp(FIREBASE_CONFIG);
-            console.log('Firebase initialized successfully');
-        } else {
-            console.log('Firebase already initialized');
-        }
-        
-        const database = firebase.database();
-        
-        const connectedRef = database.ref(".info/connected");
-        connectedRef.on("value", function(snap) {
-            const connected = snap.val() === true;
-            console.log("Firebase connected:", connected);
-            
-            if (connected !== isConnected) {
-                isConnected = connected;
-                updateConnectionStatus();
+                try {
+                    const geoResponse = await fetch('https://ipapi.co/json/');
+                    if (geoResponse.ok) {
+                        const geoJson = await geoResponse.json();
+                        geoData = {
+                            country: geoJson.country_name || 'Unknown',
+                            city: geoJson.city || 'Unknown',
+                            region: geoJson.region || 'Unknown',
+                            countryCode: geoJson.country_code || 'unknown'
+                        };
+                    }
+                } catch (geoError) {
+                    console.log("Geolocation fetch failed:", geoError);
+                }
                 
                 if (isConnected) {
-                    loadPinsFromFirebase();
-                    initVisitorCounter();
+                    const database = firebase.database();
+                    const visitorRef = database.ref('visitors/' + visitorId);
+                    
+                    const snapshot = await visitorRef.once('value');
+                    
+                    const visitorData = {
+                        id: visitorId,
+                        firstVisit: Date.now(),
+                        lastVisit: Date.now(),
+                        visits: snapshot.exists() ? ((snapshot.val().visits || 1) + 1) : 1,
+                        userAgent: navigator.userAgent.substring(0, 150),
+                        timestamp: Date.now(),
+                        // ADAUGĂ GEOLOCAȚIA (doar pentru admin)
+                        country: geoData.country,
+                        city: geoData.city,
+                        region: geoData.region,
+                        countryCode: geoData.countryCode
+                    };
+                    
+                    if (!snapshot.exists()) {
+                        await visitorRef.set(visitorData);
+                    } else {
+                        await visitorRef.update(visitorData);
+                    }
+                    
+                    // Obține numărul total de vizitatori
+                    const allVisitorsRef = database.ref('visitors');
+                    const allVisitorsSnapshot = await allVisitorsRef.once('value');
+                    const totalVisitors = allVisitorsSnapshot.numChildren();
+                    
+                    document.getElementById('visitor-count').textContent = totalVisitors;
+                    
+                } else {
+                    // Mod offline
+                    let totalVisitors = parseInt(localStorage.getItem('carolers_total_visitors') || '0');
+                    const visitorKey = 'visitor_' + visitorId;
+                    
+                    if (!localStorage.getItem(visitorKey)) {
+                        totalVisitors++;
+                        localStorage.setItem('carolers_total_visitors', totalVisitors.toString());
+                        localStorage.setItem(visitorKey, 'visited');
+                    }
+                    
+                    document.getElementById('visitor-count').textContent = totalVisitors;
                 }
+                
+            } catch (error) {
+                console.error('Error initializing visitor counter:', error);
+                const fallbackCount = localStorage.getItem('carolers_visitor_count') || '1';
+                document.getElementById('visitor-count').textContent = fallbackCount;
             }
-        });
+        }
         
-    } catch (error) {
-        console.error('Firebase initialization error:', error);
-        isConnected = false;
-        updateConnectionStatus();
-        loadFromLocalStorage();
-    }
-}
-
-function updateConnectionStatus() {
-    const statusElement = document.getElementById('connection-status');
-    
-    if (isConnected) {
-        statusElement.classList.add('connected');
-    } else {
-        statusElement.classList.remove('connected');
-    }
-}
-
-function loadPinsFromFirebase() {
-    try {
-        const database = firebase.database();
-        database.ref('pins').on('value', (snapshot) => {
-            pins = [];
-            if (snapshot.exists()) {
+        async function showStatistics() {
+            if (!isAdmin) {
+                showError('You must be logged in as admin to view statistics!');
+                showAdminLogin();
+                return;
+            }
+            
+            try {
+                if (!isConnected) {
+                    showError('Statistics are only available when connected to the internet');
+                    return;
+                }
+                
+                // Afișează loading
+                const statsBtn = document.getElementById('stats-btn');
+                const originalText = statsBtn.innerHTML;
+                statsBtn.innerHTML = '🌍 Loading...';
+                statsBtn.disabled = true;
+                
+                const database = firebase.database();
+                const visitorsRef = database.ref('visitors');
+                const snapshot = await visitorsRef.once('value');
+                
+                const visitors = [];
                 snapshot.forEach((child) => {
-                    pins.push({ 
-                        id: child.key, 
-                        ...child.val() 
+                    visitors.push({
+                        id: child.key,
+                        ...child.val()
                     });
                 });
-                console.log("Loaded pins from Firebase:", pins.length);
                 
-                localStorage.setItem('carolersPins', JSON.stringify(pins));
+                // Reset buton
+                statsBtn.innerHTML = originalText;
+                statsBtn.disabled = false;
+                
+                if (visitors.length === 0) {
+                    showError('No visitor data available yet');
+                    return;
+                }
+                
+                // Calculează statistici
+                const countryStats = {};
+                const cityStats = {};
+                const dailyStats = {};
+                
+                visitors.forEach(visitor => {
+                    const country = visitor.country || 'Unknown';
+                    const city = visitor.city || 'Unknown';
+                    const visitDate = new Date(visitor.lastVisit).toLocaleDateString();
+                    
+                    // Statistici pe țări
+                    countryStats[country] = (countryStats[country] || 0) + 1;
+                    
+                    // Statistici pe orașe (doar pentru top 10)
+                    if (city !== 'Unknown') {
+                        cityStats[city] = (cityStats[city] || 0) + 1;
+                    }
+                    
+                    // Statistici zilnice (ultimele 30 de zile)
+                    dailyStats[visitDate] = (dailyStats[visitDate] || 0) + 1;
+                });
+                
+                // Creează HTML pentru statistici
+                let statsHtml = `
+                    <div style="max-width: 500px; margin: 0 auto;">
+                        <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #dc2626, #16a34a); color: white; border-radius: 0.75rem; margin-bottom: 1.5rem;">
+                            <h3 style="margin-bottom: 0.5rem;">🌍 Admin Statistics</h3>
+                            <p style="opacity: 0.9;">Total unique visitors: <strong style="font-size: 1.5em;">${visitors.length}</strong></p>
+                            <p style="opacity: 0.9; font-size: 0.875rem; margin-top: 0.5rem;">📊 Confidential data - Admin only</p>
+                        </div>
+                `;
+                
+                // Statistici pe țări
+                const sortedCountries = Object.entries(countryStats)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 15); // Top 15 țări
+                
+                statsHtml += `
+                    <div class="stat-card">
+                        <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.2em;">📍</span>
+                            Top Countries
+                        </h4>
+                `;
+                
+                sortedCountries.forEach(([country, count]) => {
+                    const percentage = (count / visitors.length * 100).toFixed(1);
+                    const barWidth = Math.min(100, (percentage * 1.5));
+                    
+                    statsHtml += `
+                        <div style="margin-bottom: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                <span style="font-weight: 500;">${country}</span>
+                                <span style="font-weight: 600; color: #dc2626;">${count} (${percentage}%)</span>
+                            </div>
+                            <div style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; background: linear-gradient(to right, #dc2626, #16a34a); width: ${barWidth}%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                statsHtml += '</div>';
+                
+                // Statistici pe orașe (top 10)
+                const sortedCities = Object.entries(cityStats)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+                
+                if (sortedCities.length > 0) {
+                    statsHtml += `
+                        <div class="stat-card">
+                            <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.2em;">🏙️</span>
+                                Top Cities
+                            </h4>
+                    `;
+                    
+                    sortedCities.forEach(([city, count]) => {
+                        const percentage = (count / visitors.length * 100).toFixed(1);
+                        
+                        statsHtml += `
+                            <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                                <span>${city}</span>
+                                <span style="font-weight: 600;">${count}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    statsHtml += '</div>';
+                }
+                
+                // Distribuție temporală (ultimele 7 zile)
+                const sortedDates = Object.entries(dailyStats)
+                    .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+                    .slice(-7); // Ultimele 7 zile
+                
+                if (sortedDates.length > 0) {
+                    statsHtml += `
+                        <div class="stat-card">
+                            <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.2em;">📅</span>
+                                Last 7 Days Activity
+                            </h4>
+                    `;
+                    
+                    const maxVisits = Math.max(...sortedDates.map(([_, count]) => count));
+                    
+                    sortedDates.forEach(([date, count]) => {
+                        const barHeight = (count / maxVisits * 60);
+                        const shortDate = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        
+                        statsHtml += `
+                            <div style="display: inline-block; width: calc(100% / ${sortedDates.length}); padding: 0 0.25rem; text-align: center;">
+                                <div style="position: relative; height: 70px;">
+                                    <div style="position: absolute; bottom: 0; width: 80%; left: 10%; background: linear-gradient(to top, #dc2626, #16a34a); height: ${barHeight}px; border-radius: 4px 4px 0 0;"></div>
+                                    <div style="position: absolute; bottom: -25px; width: 100%; text-align: center; font-size: 0.75rem; color: #6b7280;">${shortDate}</div>
+                                </div>
+                                <div style="margin-top: 30px; font-weight: 600; color: #1f2937;">${count}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    statsHtml += '</div>';
+                }
+                
+                // Dispozitive/browsers (simplificat)
+                const deviceStats = {
+                    'Mobile': 0,
+                    'Desktop': 0,
+                    'Tablet': 0
+                };
+                
+                visitors.forEach(visitor => {
+                    const ua = visitor.userAgent || '';
+                    if (/mobile/i.test(ua)) deviceStats['Mobile']++;
+                    else if (/tablet/i.test(ua)) deviceStats['Tablet']++;
+                    else deviceStats['Desktop']++;
+                });
+                
+                statsHtml += `
+                    <div class="stat-card">
+                        <h4 style="margin-bottom: 1rem; color: #1f2937; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.2em;">📱</span>
+                            Devices Used
+                        </h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                `;
+                
+                Object.entries(deviceStats).forEach(([device, count]) => {
+                    const percentage = (count / visitors.length * 100).toFixed(1);
+                    
+                    statsHtml += `
+                        <div style="flex: 1; min-width: 100px; text-align: center; padding: 0.75rem; background: #f8fafc; border-radius: 0.5rem;">
+                            <div style="font-size: 1.5em; margin-bottom: 0.5rem;">${
+                                device === 'Mobile' ? '📱' : 
+                                device === 'Tablet' ? '📟' : '💻'
+                            }</div>
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">${device}</div>
+                            <div style="font-size: 0.875rem; color: #6b7280;">${percentage}%</div>
+                            <div style="font-size: 0.75rem; color: #dc2626; font-weight: 600;">${count}</div>
+                        </div>
+                    `;
+                });
+                
+                statsHtml += `
+                        </div>
+                    </div>
+                `;
+                
+                // Informații tehnice pentru admin
+                const uniqueCountries = Object.keys(countryStats).filter(c => c !== 'Unknown').length;
+                const uniqueCities = Object.keys(cityStats).filter(c => c !== 'Unknown').length;
+                
+                statsHtml += `
+                    <div class="stat-card" style="background: #f0f9ff; border: 1px solid #0ea5e9;">
+                        <h4 style="margin-bottom: 1rem; color: #0369a1; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.2em;">📈</span>
+                            Technical Summary
+                        </h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div style="text-align: center; padding: 0.5rem;">
+                                <div style="font-size: 1.25rem; font-weight: bold; color: #dc2626;">${uniqueCountries}</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">Unique Countries</div>
+                            </div>
+                            <div style="text-align: center; padding: 0.5rem;">
+                                <div style="font-size: 1.25rem; font-weight: bold; color: #16a34a;">${uniqueCities}</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">Unique Cities</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+                            <p style="font-size: 0.75rem; color: #6b7280; text-align: center;">
+                                Data updated: ${new Date().toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                statsHtml += '</div>';
+                
+                // Creează un modal temporar pentru statistici
+                const statsModal = document.createElement('div');
+                statsModal.className = 'modal modal-view';
+                statsModal.id = 'stats-modal';
+                statsModal.style.maxWidth = '600px';
+                statsModal.style.maxHeight = '80vh';
+                statsModal.style.overflowY = 'auto';
+                
+                statsModal.innerHTML = `
+                    <div class="modal-header" style="position: sticky; top: 0; background: white; z-index: 1;">
+                        <h3 class="modal-title">
+                            <span style="font-size: 1.5rem;">🌍</span>
+                            Admin Statistics
+                        </h3>
+                        <button class="close-btn" onclick="document.getElementById('stats-modal').remove(); document.getElementById('modal-overlay').classList.add('hidden');">×</button>
+                    </div>
+                    <div style="padding: 0 1.25rem 1.25rem;">
+                        ${statsHtml}
+                    </div>
+                `;
+                
+                // Adaugă modalul la body
+                document.body.appendChild(statsModal);
+                document.getElementById('modal-overlay').classList.remove('hidden');
+                
+                // Animație de intrare
+                setTimeout(() => {
+                    statsModal.style.transform = 'translate(-50%, -50%) scale(1)';
+                    statsModal.style.opacity = '1';
+                }, 10);
+                
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+                showError('Could not load statistics: ' + error.message);
+                
+                // Reset buton în caz de eroare
+                const statsBtn = document.getElementById('stats-btn');
+                if (statsBtn) {
+                    statsBtn.innerHTML = '🌍 Statistics';
+                    statsBtn.disabled = false;
+                }
+            }
+        }
+        
+        function initDateSelector() {
+            const dateSelect = document.getElementById('schedule-date');
+            dateSelect.innerHTML = '<option value="">-- Select date --</option>';
+            
+            const currentYear = new Date().getFullYear();
+            const currentDate = new Date();
+            
+            for (let day = 1; day <= 31; day++) {
+                const date = new Date(currentYear, 11, day);
+                
+                if (date >= currentDate || date.getDate() === currentDate.getDate()) {
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        day: 'numeric',
+                        month: 'short'
+                    });
+                    const option = document.createElement('option');
+                    option.value = formattedDate;
+                    option.textContent = formattedDate;
+                    dateSelect.appendChild(option);
+                }
+            }
+        }
+        
+        function initTimeSelectors() {
+            const hourSelectors = ['start-hour', 'end-hour'];
+            hourSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Hour</option>';
+                for (let hour = 0; hour < 24; hour++) {
+                    const option = document.createElement('option');
+                    option.value = hour.toString().padStart(2, '0');
+                    option.textContent = hour.toString().padStart(2, '0');
+                    select.appendChild(option);
+                }
+            });
+            
+            const minuteSelectors = ['start-minute', 'end-minute'];
+            minuteSelectors.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">Minute</option>';
+                for (let minute = 0; minute < 60; minute += 5) {
+                    const option = document.createElement('option');
+                    option.value = minute.toString().padStart(2, '0');
+                    option.textContent = minute.toString().padStart(2, '0');
+                    select.appendChild(option);
+                }
+            });
+            
+            const timeSelectors = ['start-hour', 'start-minute', 'end-hour', 'end-minute', 'schedule-date'];
+            timeSelectors.forEach(id => {
+                document.getElementById(id).addEventListener('change', function() {
+                    updateScheduleDisplay();
+                    validateTimes();
+                });
+            });
+        }
+        
+        function getSelectedTime(startOrEnd) {
+            const hour = document.getElementById(`${startOrEnd}-hour`).value;
+            const minute = document.getElementById(`${startOrEnd}-minute`).value;
+            
+            if (hour && minute) {
+                return `${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+            }
+            return '';
+        }
+        
+        function updateScheduleDisplay() {
+            const date = document.getElementById('schedule-date').value;
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            const display = document.getElementById('schedule-display');
+            const scheduleText = document.getElementById('schedule-text');
+            
+            let scheduleString = '';
+            
+            if (date) {
+                scheduleString += date;
+                
+                if (startTime && endTime) {
+                    scheduleString += `, ${startTime}-${endTime}`;
+                } else if (startTime) {
+                    scheduleString += `, from ${startTime}`;
+                } else if (endTime) {
+                    scheduleString += `, until ${endTime}`;
+                }
+            }
+            
+            if (scheduleString) {
+                scheduleText.textContent = scheduleString;
+                display.classList.remove('hidden');
             } else {
-                console.log("No data in Firebase");
+                display.classList.add('hidden');
+            }
+        }
+        
+        function getScheduleValue() {
+            const date = document.getElementById('schedule-date').value;
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            if (!date && !startTime && !endTime) {
+                return '';
+            }
+            
+            let scheduleString = '';
+            
+            if (date) {
+                scheduleString += date;
+            }
+            
+            if (startTime && endTime) {
+                if (scheduleString) {
+                    scheduleString += `, ${startTime}-${endTime}`;
+                } else {
+                    scheduleString = `${startTime}-${endTime}`;
+                }
+            } else if (startTime) {
+                if (scheduleString) {
+                    scheduleString += `, from ${startTime}`;
+                } else {
+                    scheduleString = `From ${startTime}`;
+                }
+            } else if (endTime) {
+                if (scheduleString) {
+                    scheduleString += `, until ${endTime}`;
+                } else {
+                    scheduleString = `Until ${endTime}`;
+                }
+            }
+            
+            return scheduleString;
+        }
+        
+        function validateTimes() {
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            if (startTime && endTime) {
+                const startMinutes = timeToMinutes(startTime);
+                const endMinutes = timeToMinutes(endTime);
+                
+                if (endMinutes <= startMinutes) {
+                    showError('End time must be after start time!');
+                    document.getElementById('end-hour').value = '';
+                    document.getElementById('end-minute').value = '';
+                    document.getElementById('schedule-display').classList.add('hidden');
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+        function timeToMinutes(time) {
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('add-btn-right').addEventListener('click', openAddModal);
+            document.getElementById('gps-btn').addEventListener('click', getUserLocation);
+            document.getElementById('center-btn').addEventListener('click', centerToDefault);
+            document.getElementById('share-btn-right').addEventListener('click', shareOnWhatsApp);
+            document.getElementById('pin-count').addEventListener('click', showListModal);
+            document.getElementById('info-btn').addEventListener('click', showInfoModal);
+            document.getElementById('modal-overlay').addEventListener('click', closeAllModals);
+        }
+        
+        function initFirebase() {
+            try {
+                if (typeof firebase === 'undefined') {
+                    console.error('Firebase SDK not loaded');
+                    isConnected = false;
+                    updateConnectionStatus();
+                    loadFromLocalStorage();
+                    return;
+                }
+
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(FIREBASE_CONFIG);
+                    console.log('Firebase initialized successfully');
+                } else {
+                    console.log('Firebase already initialized');
+                }
+                
+                const database = firebase.database();
+                
+                const connectedRef = database.ref(".info/connected");
+                connectedRef.on("value", function(snap) {
+                    const connected = snap.val() === true;
+                    console.log("Firebase connected:", connected);
+                    
+                    if (connected !== isConnected) {
+                        isConnected = connected;
+                        updateConnectionStatus();
+                        
+                        if (isConnected) {
+                            loadPinsFromFirebase();
+                            initVisitorCounter();
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
+                isConnected = false;
+                updateConnectionStatus();
                 loadFromLocalStorage();
             }
-            updateMap();
-            updatePinCount();
-        }, (error) => {
-            console.error('Firebase read error:', error);
-            loadFromLocalStorage();
-        });
-    } catch (error) {
-        console.error('Error loading from Firebase:', error);
-        loadFromLocalStorage();
-    }
-}
-
-function loadFromLocalStorage() {
-    const savedPins = localStorage.getItem('carolersPins');
-    if (savedPins) {
-        pins = JSON.parse(savedPins);
-        console.log("Loaded pins from localStorage:", pins.length);
-    } else {
-        pins = [];
-        console.log("No pins in localStorage");
-    }
-    updateMap();
-    updatePinCount();
-}
-
-function updateMap() {
-    markers.forEach(marker => marker.remove());
-    markers = [];
-    
-    if (pins.length === 0) {
-        return;
-    }
-    
-    pins.forEach(pin => {
-        const isVisited = visitedHouses[pin.id];
-        const icon = pin.icon || '🎄';
-        
-        const marker = L.marker([pin.lat, pin.lng], {
-            icon: L.divIcon({
-                html: `
-                    <div class="${isVisited ? 'visited-marker' : ''}" style="font-size: 42px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); transform: translateY(-5px); position: relative;">
-                        ${icon}
-                    </div>
-                `,
-                className: 'custom-marker',
-                iconSize: [42, 42],
-                iconAnchor: [21, 42]
-            })
-        }).addTo(map);
-        
-        let tooltipContent = `
-            <div class="custom-tooltip">
-                <div class="tooltip-family">
-                    ${isVisited ? '✅ ' : ''}${pin.icon || '🎄'} ${pin.name}
-                </div>
-                <div class="tooltip-address">
-                    📍 ${pin.address}, No. ${pin.streetNumber}
-                </div>
-        `;
-        
-        if (pin.schedule) {
-            tooltipContent += `
-                <div class="tooltip-schedule">
-                    🕐 ${pin.schedule}
-                </div>
-            `;
         }
         
-        if (pin.notes) {
-            tooltipContent += `
-                <div class="tooltip-notes">
-                    📝 ${pin.notes}
-                </div>
-            `;
-        }
-        
-        tooltipContent += `</div>`;
-        
-        marker.bindTooltip(tooltipContent, {
-            direction: 'top',
-            offset: [0, -40],
-            opacity: 0.95,
-            className: 'custom-tooltip-container'
-        });
-        
-        marker.on('click', (e) => {
-            const currentTime = new Date().getTime();
-            const timeDiff = currentTime - lastClickTime;
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-status');
             
-            if (timeDiff < 300 && timeDiff > 0) {
-                clearTimeout(clickTimer);
-                showDeleteModalForPin(pin);
+            if (isConnected) {
+                statusElement.classList.add('connected');
             } else {
-                clickTimer = setTimeout(() => {
-                    toggleVisited(pin.id);
-                }, 300);
-            }
-            
-            lastClickTime = currentTime;
-        });
-        
-        markers.push(marker);
-    });
-}
-
-function showDeleteModalForPin(pin) {
-    selectedPin = pin;
-    document.getElementById('delete-house-info').textContent = 
-        `${pin.icon || '🎄'} ${pin.name} - ${pin.address}, No. ${pin.streetNumber}`;
-    document.getElementById('delete-confirm-password').value = '';
-    showModal('delete-confirm-modal');
-}
-
-function closeDeleteConfirmModal() {
-    hideModal('delete-confirm-modal');
-    selectedPin = null;
-}
-
-function confirmPinDelete() {
-    if (!selectedPin) return;
-    
-    const password = document.getElementById('delete-confirm-password').value;
-    
-    if (!password) {
-        showError('Please enter a password');
-        return;
-    }
-    
-    const isAdminUser = password === ADMIN_PASSWORD;
-    const isOwner = selectedPin.password && password === selectedPin.password;
-    
-    if (!isAdminUser && !isOwner) {
-        showError('Incorrect password');
-        return;
-    }
-    
-    try {
-        if (isConnected) {
-            const database = firebase.database();
-            database.ref('pins/' + selectedPin.id).remove()
-                .then(() => {
-                    console.log("Pin deleted from Firebase");
-                    closeDeleteConfirmModal();
-                    loadPinsFromFirebase();
-                })
-                .catch((error) => {
-                    showError('Error deleting from server: ' + error.message);
-                });
-        } else {
-            pins = pins.filter(pin => pin.id !== selectedPin.id);
-            localStorage.setItem('carolersPins', JSON.stringify(pins));
-            updateMap();
-            updatePinCount();
-            closeDeleteConfirmModal();
-            
-            if (!document.getElementById('list-modal').classList.contains('hidden')) {
-                showListModal();
+                statusElement.classList.remove('connected');
             }
         }
-    } catch (error) {
-        showError('Error deleting house: ' + error.message);
-    }
-}
-
-function updatePinCount() {
-    const count = pins.length;
-    const visitedCount = Object.keys(visitedHouses).length;
-    const text = count === 1 ? 'house' : 'houses';
-    document.getElementById('pin-count-main').textContent = `${count} ${text}`;
-    document.getElementById('pin-count-visited').textContent = `${visitedCount} visited`;
-}
-
-function showError(message) {
-    document.getElementById('error-text').textContent = message;
-    document.getElementById('error-message').classList.remove('hidden');
-}
-
-function closeError() {
-    document.getElementById('error-message').classList.add('hidden');
-}
-
-function openAddModal() {
-    if (!clickedLocation) {
-        showError('Please first select a location on the map or use the GPS button!');
-        return;
-    }
-    showModal('add-modal');
-}
-
-function closeAddModal() {
-    hideModal('add-modal');
-    document.getElementById('add-form').reset();
-    document.getElementById('error-message').classList.add('hidden');
-    document.getElementById('location-success').classList.add('hidden');
-    document.getElementById('schedule-display').classList.add('hidden');
-    clickedLocation = null;
-    selectedIcon = '🎄';
-    initIconGrid();
-    
-    if (window.tempMarker) {
-        window.tempMarker.remove();
-        window.tempMarker = null;
-    }
-}
-
-function showModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-    document.getElementById('modal-overlay').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function hideModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-    document.getElementById('modal-overlay').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-function closeAllModals() {
-    hideModal('add-modal');
-    hideModal('view-modal');
-    hideModal('list-modal');
-    hideModal('admin-login-modal');
-    hideModal('delete-confirm-modal');
-    hideModal('info-modal');
-    // Elimină modalul de statistici dacă există
-    const statsModal = document.getElementById('stats-modal');
-    if (statsModal) {
-        statsModal.remove();
-    }
-    document.getElementById('modal-overlay').classList.add('hidden');
-}
-
-function toggleVisited(houseId) {
-    if (visitedHouses[houseId]) {
-        delete visitedHouses[houseId];
-    } else {
-        visitedHouses[houseId] = true;
-    }
-    
-    localStorage.setItem('visitedHouses', JSON.stringify(visitedHouses));
-    updateMap();
-    updatePinCount();
-    
-    if (!document.getElementById('list-modal').classList.contains('hidden')) {
-        showListModal();
-    }
-}
-
-function resetAllVisited() {
-    visitedHouses = {};
-    localStorage.setItem('visitedHouses', JSON.stringify(visitedHouses));
-    updateMap();
-    updatePinCount();
-    
-    if (!document.getElementById('list-modal').classList.contains('hidden')) {
-        showListModal();
-    }
-}
-
-function showAdminLogin() {
-    showModal('admin-login-modal');
-}
-
-function closeAdminLogin() {
-    hideModal('admin-login-modal');
-    document.getElementById('admin-password').value = '';
-}
-
-function verifyAdmin() {
-    const password = document.getElementById('admin-password').value;
-    
-    if (password === ADMIN_PASSWORD) {
-        isAdmin = true;
-        closeAdminLogin();
         
-        // Afișează butonul pentru statistici
-        document.getElementById('stats-btn').style.display = 'flex';
-        
-        updateMap();
-        
-        showToast("Admin login successful! 🌍", "success");
-    } else {
-        showError('Incorrect admin password');
-    }
-}
-
-function showListModal() {
-    if (pins.length === 0) {
-        const listContainer = document.getElementById('list-container');
-        listContainer.innerHTML = '<div class="empty-list">No houses added yet</div>';
-        showModal('list-modal');
-        return;
-    }
-    
-    const sortedPins = [...pins].sort((a, b) => {
-        const addressCompare = a.address.localeCompare(b.address);
-        if (addressCompare !== 0) return addressCompare;
-        
-        const numA = parseInt(a.streetNumber.replace(/\D/g, '')) || 0;
-        const numB = parseInt(b.streetNumber.replace(/\D/g, '')) || 0;
-        return numA - numB;
-    });
-    
-    const listContainer = document.getElementById('list-container');
-    listContainer.innerHTML = '';
-    
-    sortedPins.forEach(pin => {
-        const isVisited = visitedHouses[pin.id];
-        const listItem = document.createElement('div');
-        listItem.className = `list-item ${isVisited ? 'visited' : ''}`;
-        
-        const adminControls = `
-            <div class="checkbox-container">
-                <div class="checkbox ${isVisited ? 'checked' : ''}" onclick="toggleVisited('${pin.id}')"></div>
-                <span class="checkbox-label" onclick="toggleVisited('${pin.id}')">I caroled here</span>
-            </div>
-            <button class="delete-btn" onclick="showDeleteModalForPinFromList('${pin.id}')" style="margin-top: 8px; font-size: 11px; padding: 4px 8px;">
-                🗑️ Delete
-            </button>
-        `;
-        
-        listItem.innerHTML = `
-            <div class="list-icon">${isVisited ? '✅' : (pin.icon || '🎄')}</div>
-            <div class="list-details">
-                <div class="list-family">${pin.name} ${isVisited ? '<span style="color: #059669; font-size: 12px;">(Visited)</span>' : ''}</div>
-                <div class="list-address">${pin.address}, No. ${pin.streetNumber}</div>
-                ${pin.schedule ? `<div class="list-schedule">🕐 ${pin.schedule}</div>` : ''}
-                ${pin.notes ? `<div class="list-notes">📝 ${pin.notes}</div>` : ''}
-                ${adminControls}
-            </div>
-        `;
-        listContainer.appendChild(listItem);
-    });
-    
-    showModal('list-modal');
-}
-
-function showDeleteModalForPinFromList(houseId) {
-    const pin = pins.find(p => p.id === houseId);
-    if (pin) {
-        showDeleteModalForPin(pin);
-    } else {
-        showListModal();
-    }
-}
-
-function closeListModal() {
-    hideModal('list-modal');
-}
-
-function handleSubmit(e) {
-    e.preventDefault();
-    
-    closeError();
-    
-    const name = document.getElementById('name').value.trim();
-    const address = document.getElementById('address').value.trim();
-    const streetNumber = document.getElementById('streetNumber').value.trim();
-    
-    if (!name || !address || !streetNumber) {
-        showError('Please complete all required fields:\n\n• Family Name\n• Street\n• House Number');
-        return;
-    }
-    
-    if (!clickedLocation) {
-        showError('Please select a location on the map!');
-        return;
-    }
-    
-    const selectedDate = document.getElementById('schedule-date').value;
-    if (selectedDate) {
-        const currentDate = new Date();
-        const selectedDateStr = selectedDate + ' ' + currentDate.getFullYear();
-        const selectedDateObj = new Date(selectedDateStr);
-        
-        if (selectedDateObj < currentDate && selectedDateObj.getDate() !== currentDate.getDate()) {
-            showError('Cannot select past dates! Please select today or a future date.');
-            return;
-        }
-    }
-    
-    const startTime = getSelectedTime('start');
-    const endTime = getSelectedTime('end');
-    
-    if (startTime && endTime) {
-        const startMinutes = timeToMinutes(startTime);
-        const endMinutes = timeToMinutes(endTime);
-        
-        if (endMinutes <= startMinutes) {
-            showError('End time must be after start time!');
-            return;
-        }
-    }
-    
-    const pinData = {
-        name,
-        address,
-        streetNumber,
-        schedule: getScheduleValue(),
-        notes: document.getElementById('notes').value,
-        icon: selectedIcon,
-        password: document.getElementById('password').value,
-        lat: clickedLocation.lat,
-        lng: clickedLocation.lng,
-        timestamp: new Date().toISOString()
-    };
-    
-    try {
-        if (isConnected) {
-            const database = firebase.database();
-            database.ref('pins').push(pinData)
-                .then((result) => {
-                    console.log("Saved to Firebase with key:", result.key);
-                    closeAddModal();
-                    
-                    if (window.tempMarker) {
-                        window.tempMarker.remove();
-                        window.tempMarker = null;
+        function loadPinsFromFirebase() {
+            try {
+                const database = firebase.database();
+                database.ref('pins').on('value', (snapshot) => {
+                    pins = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach((child) => {
+                            pins.push({ 
+                                id: child.key, 
+                                ...child.val() 
+                            });
+                        });
+                        console.log("Loaded pins from Firebase:", pins.length);
+                        
+                        localStorage.setItem('carolersPins', JSON.stringify(pins));
+                    } else {
+                        console.log("No data in Firebase");
+                        loadFromLocalStorage();
                     }
-                })
-                .catch((error) => {
-                    console.error("Firebase save error:", error);
-                    showError('Error saving to server: ' + error.message);
+                    updateMap();
+                    updatePinCount();
+                }, (error) => {
+                    console.error('Firebase read error:', error);
+                    loadFromLocalStorage();
                 });
-        } else {
-            const newPin = {
-                id: 'local_' + Date.now(),
-                ...pinData
-            };
-            pins.push(newPin);
-            localStorage.setItem('carolersPins', JSON.stringify(pins));
+            } catch (error) {
+                console.error('Error loading from Firebase:', error);
+                loadFromLocalStorage();
+            }
+        }
+        
+        function loadFromLocalStorage() {
+            const savedPins = localStorage.getItem('carolersPins');
+            if (savedPins) {
+                pins = JSON.parse(savedPins);
+                console.log("Loaded pins from localStorage:", pins.length);
+            } else {
+                pins = [];
+                console.log("No pins in localStorage");
+            }
             updateMap();
             updatePinCount();
-            closeAddModal();
+        }
+        
+        function updateMap() {
+            markers.forEach(marker => marker.remove());
+            markers = [];
+            
+            if (pins.length === 0) {
+                return;
+            }
+            
+            pins.forEach(pin => {
+                const isVisited = visitedHouses[pin.id];
+                const icon = pin.icon || '🎄';
+                
+                const marker = L.marker([pin.lat, pin.lng], {
+                    icon: L.divIcon({
+                        html: `
+                            <div class="${isVisited ? 'visited-marker' : ''}" style="font-size: 42px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); transform: translateY(-5px); position: relative;">
+                                ${icon}
+                            </div>
+                        `,
+                        className: 'custom-marker',
+                        iconSize: [42, 42],
+                        iconAnchor: [21, 42]
+                    })
+                }).addTo(map);
+                
+                let tooltipContent = `
+                    <div class="custom-tooltip">
+                        <div class="tooltip-family">
+                            ${isVisited ? '✅ ' : ''}${pin.icon || '🎄'} ${pin.name}
+                        </div>
+                        <div class="tooltip-address">
+                            📍 ${pin.address}, No. ${pin.streetNumber}
+                        </div>
+                `;
+                
+                if (pin.schedule) {
+                    tooltipContent += `
+                        <div class="tooltip-schedule">
+                            🕐 ${pin.schedule}
+                        </div>
+                    `;
+                }
+                
+                if (pin.notes) {
+                    tooltipContent += `
+                        <div class="tooltip-notes">
+                            📝 ${pin.notes}
+                        </div>
+                    `;
+                }
+                
+                tooltipContent += `</div>`;
+                
+                marker.bindTooltip(tooltipContent, {
+                    direction: 'top',
+                    offset: [0, -40],
+                    opacity: 0.95,
+                    className: 'custom-tooltip-container'
+                });
+                
+                marker.on('click', (e) => {
+                    const currentTime = new Date().getTime();
+                    const timeDiff = currentTime - lastClickTime;
+                    
+                    if (timeDiff < 300 && timeDiff > 0) {
+                        clearTimeout(clickTimer);
+                        showDeleteModalForPin(pin);
+                    } else {
+                        clickTimer = setTimeout(() => {
+                            toggleVisited(pin.id);
+                        }, 300);
+                    }
+                    
+                    lastClickTime = currentTime;
+                });
+                
+                markers.push(marker);
+            });
+        }
+        
+        function showDeleteModalForPin(pin) {
+            selectedPin = pin;
+            document.getElementById('delete-house-info').textContent = 
+                `${pin.icon || '🎄'} ${pin.name} - ${pin.address}, No. ${pin.streetNumber}`;
+            document.getElementById('delete-confirm-password').value = '';
+            showModal('delete-confirm-modal');
+        }
+        
+        function closeDeleteConfirmModal() {
+            hideModal('delete-confirm-modal');
+            selectedPin = null;
+        }
+        
+        function confirmPinDelete() {
+            if (!selectedPin) return;
+            
+            const password = document.getElementById('delete-confirm-password').value;
+            
+            if (!password) {
+                showError('Please enter a password');
+                return;
+            }
+            
+            const isAdminUser = password === ADMIN_PASSWORD;
+            const isOwner = selectedPin.password && password === selectedPin.password;
+            
+            if (!isAdminUser && !isOwner) {
+                showError('Incorrect password');
+                return;
+            }
+            
+            try {
+                if (isConnected) {
+                    const database = firebase.database();
+                    database.ref('pins/' + selectedPin.id).remove()
+                        .then(() => {
+                            console.log("Pin deleted from Firebase");
+                            closeDeleteConfirmModal();
+                            loadPinsFromFirebase();
+                        })
+                        .catch((error) => {
+                            showError('Error deleting from server: ' + error.message);
+                        });
+                } else {
+                    pins = pins.filter(pin => pin.id !== selectedPin.id);
+                    localStorage.setItem('carolersPins', JSON.stringify(pins));
+                    updateMap();
+                    updatePinCount();
+                    closeDeleteConfirmModal();
+                    
+                    if (!document.getElementById('list-modal').classList.contains('hidden')) {
+                        showListModal();
+                    }
+                }
+            } catch (error) {
+                showError('Error deleting house: ' + error.message);
+            }
+        }
+        
+        function updatePinCount() {
+            const count = pins.length;
+            const visitedCount = Object.keys(visitedHouses).length;
+            const text = count === 1 ? 'house' : 'houses';
+            document.getElementById('pin-count-main').textContent = `${count} ${text}`;
+            document.getElementById('pin-count-visited').textContent = `${visitedCount} visited`;
+        }
+        
+        function showError(message) {
+            document.getElementById('error-text').textContent = message;
+            document.getElementById('error-message').classList.remove('hidden');
+        }
+        
+        function closeError() {
+            document.getElementById('error-message').classList.add('hidden');
+        }
+        
+        function openAddModal() {
+            if (!clickedLocation) {
+                showError('Please first select a location on the map or use the GPS button!');
+                return;
+            }
+            showModal('add-modal');
+        }
+        
+        function closeAddModal() {
+            hideModal('add-modal');
+            document.getElementById('add-form').reset();
+            document.getElementById('error-message').classList.add('hidden');
+            document.getElementById('location-success').classList.add('hidden');
+            document.getElementById('schedule-display').classList.add('hidden');
+            clickedLocation = null;
+            selectedIcon = '🎄';
+            initIconGrid();
             
             if (window.tempMarker) {
                 window.tempMarker.remove();
                 window.tempMarker = null;
             }
         }
-    } catch (error) {
-        console.error("Save error:", error);
-        showError('Error saving house: ' + error.message);
-    }
-}
-
-function initMap() {
-    map = L.map('map');
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-    }).addTo(map);
-    
-    map.setView(DEFAULT_CENTER, 15);
-    
-    map.on('click', (e) => {
-        const lat = e.latlng.lat;
-        const lng = e.latlng.lng;
         
-        clickedLocation = { lat, lng };
-        
-        if (window.tempMarker) {
-            window.tempMarker.remove();
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById('modal-overlay').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         }
         
-        window.tempMarker = L.marker([lat, lng], {
-            icon: L.divIcon({
-                html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));">📍</div>',
-                className: 'temp-marker',
-                iconSize: [48, 48],
-                iconAnchor: [24, 48]
-            })
-        }).addTo(map);
-        
-        if (!document.getElementById('add-modal').classList.contains('hidden')) {
-            document.getElementById('location-success').classList.remove('hidden');
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById('modal-overlay').classList.add('hidden');
+            document.body.style.overflow = '';
         }
-    });
-    
-    setTimeout(() => {
-        map.invalidateSize();
-        document.getElementById('loading').classList.add('hidden');
-    }, 500);
-    
-    window.addEventListener('resize', () => {
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 100);
-    });
-}
-
-function initIconGrid() {
-    const grid = document.getElementById('icon-grid');
-    grid.innerHTML = '';
-    ICONS.forEach(icon => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'icon-btn';
-        btn.textContent = icon;
-        btn.onclick = () => selectIcon(icon);
-        if (icon === selectedIcon) btn.classList.add('selected');
-        grid.appendChild(btn);
-    });
-}
-
-function selectIcon(icon) {
-    selectedIcon = icon;
-    document.querySelectorAll('.icon-btn').forEach(btn => {
-        btn.classList.toggle('selected', btn.textContent === icon);
-    });
-}
-
-function getUserLocation() {
-    const gpsBtn = document.getElementById('gps-btn');
-    gpsBtn.disabled = true;
-    gpsBtn.classList.add('loading');
-    gpsBtn.innerHTML = '⏳';
-    
-    if (!navigator.geolocation) {
-        resetGpsButton();
-        showError('Geolocation is not supported by your browser');
-        return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            clickedLocation = { lat, lng };
-            
-            if (userLocationMarker) {
-                userLocationMarker.remove();
+        
+        function closeAllModals() {
+            hideModal('add-modal');
+            hideModal('view-modal');
+            hideModal('list-modal');
+            hideModal('admin-login-modal');
+            hideModal('delete-confirm-modal');
+            hideModal('info-modal');
+            // Elimină modalul de statistici dacă există
+            const statsModal = document.getElementById('stats-modal');
+            if (statsModal) {
+                statsModal.remove();
+            }
+            document.getElementById('modal-overlay').classList.add('hidden');
+        }
+        
+        function toggleVisited(houseId) {
+            if (visitedHouses[houseId]) {
+                delete visitedHouses[houseId];
+            } else {
+                visitedHouses[houseId] = true;
             }
             
-            userLocationMarker = L.marker([lat, lng], {
-                icon: L.divIcon({
-                    html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); color: #3b82f6;">📍</div>',
-                    className: 'user-location-marker',
-                    iconSize: [48, 48],
-                    iconAnchor: [24, 48]
-                })
+            localStorage.setItem('visitedHouses', JSON.stringify(visitedHouses));
+            updateMap();
+            updatePinCount();
+            
+            if (!document.getElementById('list-modal').classList.contains('hidden')) {
+                showListModal();
+            }
+        }
+        
+        function resetAllVisited() {
+            visitedHouses = {};
+            localStorage.setItem('visitedHouses', JSON.stringify(visitedHouses));
+            updateMap();
+            updatePinCount();
+            
+            if (!document.getElementById('list-modal').classList.contains('hidden')) {
+                showListModal();
+            }
+        }
+        
+        function showAdminLogin() {
+            showModal('admin-login-modal');
+        }
+        
+        function closeAdminLogin() {
+            hideModal('admin-login-modal');
+            document.getElementById('admin-password').value = '';
+        }
+        
+        function verifyAdmin() {
+            const password = document.getElementById('admin-password').value;
+            
+            if (password === ADMIN_PASSWORD) {
+                isAdmin = true;
+                closeAdminLogin();
+                
+                // Afișează butonul pentru statistici
+                document.getElementById('stats-btn').style.display = 'flex';
+                
+                updateMap();
+                
+                showToast("Admin login successful! 🌍", "success");
+            } else {
+                showError('Incorrect admin password');
+            }
+        }
+        
+        function showListModal() {
+            if (pins.length === 0) {
+                const listContainer = document.getElementById('list-container');
+                listContainer.innerHTML = '<div class="empty-list">No houses added yet</div>';
+                showModal('list-modal');
+                return;
+            }
+            
+            const sortedPins = [...pins].sort((a, b) => {
+                const addressCompare = a.address.localeCompare(b.address);
+                if (addressCompare !== 0) return addressCompare;
+                
+                const numA = parseInt(a.streetNumber.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.streetNumber.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+            
+            const listContainer = document.getElementById('list-container');
+            listContainer.innerHTML = '';
+            
+            sortedPins.forEach(pin => {
+                const isVisited = visitedHouses[pin.id];
+                const listItem = document.createElement('div');
+                listItem.className = `list-item ${isVisited ? 'visited' : ''}`;
+                
+                const adminControls = `
+                    <div class="checkbox-container">
+                        <div class="checkbox ${isVisited ? 'checked' : ''}" onclick="toggleVisited('${pin.id}')"></div>
+                        <span class="checkbox-label" onclick="toggleVisited('${pin.id}')">I caroled here</span>
+                    </div>
+                    <button class="delete-btn" onclick="showDeleteModalForPinFromList('${pin.id}')" style="margin-top: 8px; font-size: 11px; padding: 4px 8px;">
+                        🗑️ Delete
+                    </button>
+                `;
+                
+                listItem.innerHTML = `
+                    <div class="list-icon">${isVisited ? '✅' : (pin.icon || '🎄')}</div>
+                    <div class="list-details">
+                        <div class="list-family">${pin.name} ${isVisited ? '<span style="color: #059669; font-size: 12px;">(Visited)</span>' : ''}</div>
+                        <div class="list-address">${pin.address}, No. ${pin.streetNumber}</div>
+                        ${pin.schedule ? `<div class="list-schedule">🕐 ${pin.schedule}</div>` : ''}
+                        ${pin.notes ? `<div class="list-notes">📝 ${pin.notes}</div>` : ''}
+                        ${adminControls}
+                    </div>
+                `;
+                listContainer.appendChild(listItem);
+            });
+            
+            showModal('list-modal');
+        }
+        
+        function showDeleteModalForPinFromList(houseId) {
+            const pin = pins.find(p => p.id === houseId);
+            if (pin) {
+                showDeleteModalForPin(pin);
+            } else {
+                showListModal();
+            }
+        }
+        
+        function closeListModal() {
+            hideModal('list-modal');
+        }
+        
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            closeError();
+            
+            const name = document.getElementById('name').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const streetNumber = document.getElementById('streetNumber').value.trim();
+            
+            if (!name || !address || !streetNumber) {
+                showError('Please complete all required fields:\n\n• Family Name\n• Street\n• House Number');
+                return;
+            }
+            
+            if (!clickedLocation) {
+                showError('Please select a location on the map!');
+                return;
+            }
+            
+            const selectedDate = document.getElementById('schedule-date').value;
+            if (selectedDate) {
+                const currentDate = new Date();
+                const selectedDateStr = selectedDate + ' ' + currentDate.getFullYear();
+                const selectedDateObj = new Date(selectedDateStr);
+                
+                if (selectedDateObj < currentDate && selectedDateObj.getDate() !== currentDate.getDate()) {
+                    showError('Cannot select past dates! Please select today or a future date.');
+                    return;
+                }
+            }
+            
+            const startTime = getSelectedTime('start');
+            const endTime = getSelectedTime('end');
+            
+            if (startTime && endTime) {
+                const startMinutes = timeToMinutes(startTime);
+                const endMinutes = timeToMinutes(endTime);
+                
+                if (endMinutes <= startMinutes) {
+                    showError('End time must be after start time!');
+                    return;
+                }
+            }
+            
+            const pinData = {
+                name,
+                address,
+                streetNumber,
+                schedule: getScheduleValue(),
+                notes: document.getElementById('notes').value,
+                icon: selectedIcon,
+                password: document.getElementById('password').value,
+                lat: clickedLocation.lat,
+                lng: clickedLocation.lng,
+                timestamp: new Date().toISOString()
+            };
+            
+            try {
+                if (isConnected) {
+                    const database = firebase.database();
+                    database.ref('pins').push(pinData)
+                        .then((result) => {
+                            console.log("Saved to Firebase with key:", result.key);
+                            closeAddModal();
+                            
+                            if (window.tempMarker) {
+                                window.tempMarker.remove();
+                                window.tempMarker = null;
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Firebase save error:", error);
+                            showError('Error saving to server: ' + error.message);
+                        });
+                } else {
+                    const newPin = {
+                        id: 'local_' + Date.now(),
+                        ...pinData
+                    };
+                    pins.push(newPin);
+                    localStorage.setItem('carolersPins', JSON.stringify(pins));
+                    updateMap();
+                    updatePinCount();
+                    closeAddModal();
+                    
+                    if (window.tempMarker) {
+                        window.tempMarker.remove();
+                        window.tempMarker = null;
+                    }
+                }
+            } catch (error) {
+                console.error("Save error:", error);
+                showError('Error saving house: ' + error.message);
+            }
+        }
+        
+        function initMap() {
+            map = L.map('map');
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(map);
             
-            map.setView([lat, lng], 17);
+            map.setView(DEFAULT_CENTER, 15);
             
-            gpsBtn.innerHTML = '📍';
-            setTimeout(resetGpsButton, 2000);
+            map.on('click', (e) => {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                
+                clickedLocation = { lat, lng };
+                
+                if (window.tempMarker) {
+                    window.tempMarker.remove();
+                }
+                
+                window.tempMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));">📍</div>',
+                        className: 'temp-marker',
+                        iconSize: [48, 48],
+                        iconAnchor: [24, 48]
+                    })
+                }).addTo(map);
+                
+                if (!document.getElementById('add-modal').classList.contains('hidden')) {
+                    document.getElementById('location-success').classList.remove('hidden');
+                }
+            });
             
-            if (!document.getElementById('add-modal').classList.contains('hidden')) {
-                document.getElementById('location-success').classList.remove('hidden');
-            }
-        },
-        function(error) {
-            resetGpsButton();
-            showError('Could not get your location. Please select manually on the map.');
-        },
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000
+            setTimeout(() => {
+                map.invalidateSize();
+                document.getElementById('loading').classList.add('hidden');
+            }, 500);
+            
+            window.addEventListener('resize', () => {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            });
         }
-    );
-}
-
-function resetGpsButton() {
-    const gpsBtn = document.getElementById('gps-btn');
-    gpsBtn.disabled = false;
-    gpsBtn.classList.remove('loading');
-    gpsBtn.innerHTML = '📍';
-}
-
-function centerToDefault() {
-    map.setView(DEFAULT_CENTER, 15);
-}
-
-function shareOnWhatsApp() {
-    const text = '🎄 Welcome Carolers! 🎅\n\nMap of houses that welcome carolers.\nAdd your house too: ' + window.location.href;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: 'Carolers Map',
-            text: text
-        });
-    } else {
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(whatsappUrl, '_blank');
-    }
-}
-
-function showInfoModal() {
-    showModal('info-modal');
-}
-
-function closeInfoModal() {
-    hideModal('info-modal');
-}
-
-function showToast(message, type = 'info') {
-    const oldToasts = document.querySelectorAll('.toast');
-    oldToasts.forEach(toast => toast.remove());
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
-}
+        
+        function initIconGrid() {
+            const grid = document.getElementById('icon-grid');
+            grid.innerHTML = '';
+            ICONS.forEach(icon => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'icon-btn';
+                btn.textContent = icon;
+                btn.onclick = () => selectIcon(icon);
+                if (icon === selectedIcon) btn.classList.add('selected');
+                grid.appendChild(btn);
+            });
+        }
+        
+        function selectIcon(icon) {
+            selectedIcon = icon;
+            document.querySelectorAll('.icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.textContent === icon);
+            });
+        }
+        
+        function getUserLocation() {
+            const gpsBtn = document.getElementById('gps-btn');
+            gpsBtn.disabled = true;
+            gpsBtn.classList.add('loading');
+            gpsBtn.innerHTML = '⏳';
+            
+            if (!navigator.geolocation) {
+                resetGpsButton();
+                showError('Geolocation is not supported by your browser');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    clickedLocation = { lat, lng };
+                    
+                    if (userLocationMarker) {
+                        userLocationMarker.remove();
+                    }
+                    
+                    userLocationMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            html: '<div style="font-size: 48px; animation: pulse 1s infinite; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4)); color: #3b82f6;">📍</div>',
+                            className: 'user-location-marker',
+                            iconSize: [48, 48],
+                            iconAnchor: [24, 48]
+                        })
+                    }).addTo(map);
+                    
+                    map.setView([lat, lng], 17);
+                    
+                    gpsBtn.innerHTML = '📍';
+                    setTimeout(resetGpsButton, 2000);
+                    
+                    if (!document.getElementById('add-modal').classList.contains('hidden')) {
+                        document.getElementById('location-success').classList.remove('hidden');
+                    }
+                },
+                function(error) {
+                    resetGpsButton();
+                    showError('Could not get your location. Please select manually on the map.');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+        
+        function resetGpsButton() {
+            const gpsBtn = document.getElementById('gps-btn');
+            gpsBtn.disabled = false;
+            gpsBtn.classList.remove('loading');
+            gpsBtn.innerHTML = '📍';
+        }
+        
+        function centerToDefault() {
+            map.setView(DEFAULT_CENTER, 15);
+        }
+        
+        function shareOnWhatsApp() {
+            const text = '🎄 Welcome Carolers! 🎅\n\nMap of houses that welcome carolers.\nAdd your house too: ' + window.location.href;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Carolers Map',
+                    text: text
+                });
+            } else {
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                window.open(whatsappUrl, '_blank');
+            }
+        }
+        
+        function showInfoModal() {
+            showModal('info-modal');
+        }
+        
+        function closeInfoModal() {
+            hideModal('info-modal');
+        }
+        
+        function showToast(message, type = 'info') {
+            const oldToasts = document.querySelectorAll('.toast');
+            oldToasts.forEach(toast => toast.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
